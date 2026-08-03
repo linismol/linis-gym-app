@@ -1,0 +1,18 @@
+# Fotos personales (datos sensibles) — no versionar
+Fotos/
+
+# Artefacto de build / handoff (binario grande, regenerable)
+*.zip
+
+# Sidecars de image-slot generados en runtime
+*.image-slots.state.json
+.image-slots.state.json
+
+# Basura de sistema operativo / OneDrive / editores
+.DS_Store
+Thumbs.db
+desktop.ini
+*.tmp
+*~
+.vscode/
+.idea/
