@@ -1,0 +1,753 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#161826">
+<title>Linis Gym App · Rutina 5 Días</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+/* ===== Nocturne design system — tokens (source of truth: styles.css) ===== */
+:root{
+  --color-bg:#161826;
+  --color-surface:#232532;
+  --color-text:#e9e9ed;
+  --color-accent:#9184d9;
+  --color-accent-2:#a7a1db;
+  --color-divider:color-mix(in srgb, #e9e9ed 16%, transparent);
+
+  --color-neutral-100:#f3f5fe;--color-neutral-200:#e4e7f5;--color-neutral-300:#cfd3e5;--color-neutral-400:#b2b6ca;--color-neutral-500:#9397ab;--color-neutral-600:#75798c;--color-neutral-700:#595d6c;--color-neutral-800:#3f424d;--color-neutral-900:#292b31;
+
+  --color-accent-100:#f5f4ff;--color-accent-200:#e7e5fe;--color-accent-300:#d2cefd;--color-accent-400:#b5abfc;--color-accent-500:#968ae0;--color-accent-600:#796cbf;--color-accent-700:#5d5294;--color-accent-800:#423a6a;--color-accent-900:#2b2741;
+
+  --color-accent-2-100:#f5f4ff;--color-accent-2-200:#e7e5fe;--color-accent-2-300:#d2cefd;--color-accent-2-400:#b5afe8;--color-accent-2-500:#9690c9;--color-accent-2-600:#7972a9;--color-accent-2-700:#5c5783;--color-accent-2-800:#423e5d;--color-accent-2-900:#2b293a;
+
+  --font-heading:"Inter",system-ui,sans-serif;
+  --font-heading-weight:500;
+  --font-body:"Inter",system-ui,sans-serif;
+
+  --space-1:2.8px;--space-2:5.6px;--space-3:8.4px;--space-4:11.2px;--space-6:16.8px;--space-8:22.4px;
+  --radius-sm:4px;--radius-md:8px;--radius-lg:14px;
+
+  --shadow-sm:0 0 0 1px #3f424d;
+  --shadow-md:0 0 0 1px #595d6c, 0 6px 18px rgba(0,0,0,0.55);
+  --shadow-lg:0 0 0 1px #9397ab, 0 16px 40px rgba(0,0,0,0.65);
+}
+
+*,*::before,*::after{box-sizing:border-box;}
+html,body{margin:0;padding:0;}
+body{
+  background:var(--color-bg);color:var(--color-text);
+  font-family:var(--font-body);font-size:15px;line-height:1.55;font-weight:400;
+  -webkit-text-size-adjust:100%;-webkit-tap-highlight-color:transparent;
+}
+h2{font-family:var(--font-heading);font-weight:var(--font-heading-weight);line-height:1.12;letter-spacing:-0.015em;font-size:28px;margin:0;}
+a{color:var(--color-accent);text-decoration:none;text-underline-offset:3px;}
+a:hover{color:var(--color-accent-300);}
+:focus{outline:none;}
+:focus-visible{outline:2px solid var(--color-accent);outline-offset:2px;}
+::selection{background:color-mix(in srgb, var(--color-accent) 30%, transparent);}
+.lighten{mix-blend-mode:lighten;background-color:transparent;}
+
+/* buttons — outlined, never filled (Nocturne signature) */
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:6px;cursor:pointer;text-decoration:none;font-family:var(--font-heading);font-weight:var(--font-heading-weight);font-size:14px;line-height:1.2;color:var(--color-text);background:transparent;border:1px solid transparent;padding:var(--space-2) calc(var(--space-3)*1.2);border-radius:var(--radius-md);}
+.btn:disabled{opacity:0.45;cursor:not-allowed;}
+.btn-primary{color:var(--color-accent);border-color:var(--color-accent);}
+.btn-primary:hover{background:color-mix(in srgb, var(--color-accent) 12%, transparent);}
+.btn-primary:active{background:color-mix(in srgb, var(--color-accent) 22%, transparent);}
+.btn-secondary{border-color:var(--color-divider);}
+.btn-secondary:hover{background:color-mix(in srgb, var(--color-text) 7%, transparent);}
+.btn-secondary:active{background:color-mix(in srgb, var(--color-text) 14%, transparent);}
+
+/* forms */
+.field>label{display:block;font-size:12px;margin-bottom:5px;color:color-mix(in srgb, var(--color-text) 70%, transparent);}
+.input{width:100%;min-height:36px;padding:6px 10px;font:inherit;font-size:14px;color:var(--color-text);caret-color:var(--color-accent);background:var(--color-surface);border:1px solid var(--color-divider);border-radius:var(--radius-md);}
+.input::placeholder{color:var(--color-neutral-500);}
+.input:hover{border-color:color-mix(in srgb, var(--color-text) 45%, transparent);}
+.input:focus-visible{border-color:var(--color-accent);outline-offset:0;}
+
+/* cards */
+.card{display:flex;flex-direction:column;gap:var(--space-2);padding:var(--space-3);border-radius:var(--radius-md);background:var(--color-surface);}
+.card-kicker{font-size:10px;letter-spacing:0.1em;text-transform:uppercase;color:var(--color-accent);}
+.elev-sm{box-shadow:var(--shadow-sm);}
+
+/* tags */
+.tag{display:inline-flex;align-items:center;font-size:11px;letter-spacing:0.02em;padding:3px 10px;border-radius:calc(var(--radius-md)*0.75);white-space:nowrap;}
+.tag-accent{background:var(--color-accent-800);color:var(--color-accent-100);}
+.tag-accent-2{background:var(--color-accent-2-800);color:var(--color-accent-2-100);}
+.tag-neutral{background:var(--color-neutral-800);color:var(--color-neutral-100);}
+
+/* app-specific (from the .dc helmet) */
+.chev{transition:transform 120ms ease-out;color:var(--color-neutral-500);flex:none;}
+.daytab{padding:8px 12px;background:transparent;border:none;border-bottom:2px solid transparent;margin-bottom:-1px;cursor:pointer;font-family:var(--font-body);font-size:13px;white-space:nowrap;color:var(--color-neutral-500);transition:color 120ms ease-out;}
+.daytab.active{color:var(--color-accent);border-bottom-color:var(--color-accent);}
+.chk{width:18px;height:18px;border-radius:5px;border:1.5px solid var(--color-divider);flex:none;display:flex;align-items:center;justify-content:center;cursor:pointer;font-size:12px;color:var(--color-bg);}
+.chk.done{background:var(--color-accent);border-color:var(--color-accent);}
+
+.app{max-width:480px;margin:0 auto;min-height:100vh;background:var(--color-bg);color:var(--color-text);box-shadow:var(--shadow-lg);}
+.hdr{position:sticky;top:0;z-index:20;background:var(--color-bg);border-bottom:1px solid var(--color-divider);padding-top:env(safe-area-inset-top,0px);}
+.hdr-top{padding:16px 20px 4px;}
+.eyebrow{font-size:11px;letter-spacing:0.08em;text-transform:uppercase;color:var(--color-accent);}
+.tabrow{display:flex;overflow-x:auto;padding:8px 12px 0;gap:2px;scrollbar-width:none;}
+.tabrow::-webkit-scrollbar{display:none;}
+.tabrow.days{padding:6px 12px 0;border-top:1px solid var(--color-divider);}
+.muted{color:var(--color-neutral-500);}
+</style>
+</head>
+<body>
+<main class="app" id="root"></main>
+
+<script>
+"use strict";
+
+/* ==================== Data (ported from Rutina Gym - 5 Días.dc.html) ==================== */
+const PH = {
+  bootyBuilder: "https://commons.wikimedia.org/wiki/Special:FilePath/Leg%20Press%20Machine.jpg",
+  legPress: "https://commons.wikimedia.org/wiki/Special:FilePath/Leg%20Press%20Machine.jpg",
+  legMachine: "https://commons.wikimedia.org/wiki/Special:FilePath/Young%20man%20doing%20leg%20with%20machine%20in%20gym.jpg",
+  legExtension: "https://commons.wikimedia.org/wiki/Special:FilePath/LegExtensionMachineExercise.JPG",
+  smith: "https://commons.wikimedia.org/wiki/Special:FilePath/Krafttraining.jpg",
+  dumbbells: "https://commons.wikimedia.org/wiki/Special:FilePath/Colorful%20pile%20of%20dumbbells%20at%20the%20gym.jpg",
+  cable: "https://commons.wikimedia.org/wiki/Special:FilePath/CableMachinePushdown.JPG",
+  cableRow: "https://commons.wikimedia.org/wiki/Special:FilePath/Woman%20using%20a%20seated%20cable%20row%20machine%20at%20the%20gym.jpg",
+  gym: "https://commons.wikimedia.org/wiki/Special:FilePath/Interior%20of%20a%20Gym.jpg",
+};
+const yt = (q) => "https://www.youtube.com/results?search_query=" + encodeURIComponent(q);
+const TONE_MAP = { pink: "accent", orange: "accent-2", yellow: "neutral" };
+
+const DAYS = [
+  { label: "Día 1 · Glúteo", focusNote: "Patrón de empuje de cadera con base de pierna. Rango de rodilla controlado.", knee: true, tags: true,
+    exercises: [
+      { name: "Hip Thrust en Booty Builder (Panatta)", setCount: 4, repsLabel: "8-10 (B-stance)", category: "Activator", tone: "pink",
+        prevWeights: [60, 70, 70, 80], photo: PH.bootyBuilder,
+        tempoNote: "Pausa de 2 segundos en el pico de contracción de cada rep. Sube la carga si las últimas 2 reps no cuestan.",
+        kneeNote: null,
+        explanation: "Activator del día: carga pesada en la posición acortada del glúteo, en B-stance para corregir el lado que se queda atrás. Sube la carga frente a la semana pasada.",
+        hasAlt: true, altName: "Hip Thrust con barra en Smith Machine", altPhoto: PH.smith, altExplanation: "Mismo patrón y posición acortada, con la barra fija en el riel. Mantén la pausa en el pico y la B-stance." },
+      { name: "Peso muerto rumano con mancuernas", setCount: 4, repsLabel: "10-12", category: "Stretcher", tone: "orange",
+        prevWeights: [18, 18, 20, 20], photo: PH.dumbbells,
+        tempoNote: "Baja controlado 3 segundos hasta sentir el estiramiento en isquios/glúteo, sin redondear la espalda baja.",
+        kneeNote: null,
+        explanation: "Stretcher: trabaja el glúteo en su posición más elongada. El movimiento sale de la cadera, no de la rodilla.",
+        hasAlt: true, altName: "Peso muerto rumano en Smith Machine", altPhoto: PH.smith, altExplanation: "Misma bisagra de cadera, con la barra guiada — útil si el agarre de mancuernas te limita antes que el glúteo." },
+      { name: "Sentadilla búlgara (rango controlado)", setCount: 3, repsLabel: "10 por lado", category: "Stretcher", tone: "orange",
+        prevWeights: [14, 16, 16], photo: PH.dumbbells,
+        tempoNote: "Baja solo hasta donde la rodilla de atrás se acerque al piso sin llegar — tu rango controlado de siempre.",
+        kneeNote: "Respeta tu rango controlado: no bajes a profundidad completa.",
+        explanation: "Stretcher unilateral: obliga a estabilizar cada pierna por separado y ayuda a parejar el desarrollo entre lados.",
+        hasAlt: true, altName: "Zancada estática en Smith Machine (rango controlado)", altPhoto: PH.smith, altExplanation: "Misma restricción de rango, con la barra guiada — más estable si el equilibrio con mancuernas te limita la carga." },
+      { name: "Hack Squat (Panatta, media sentadilla)", setCount: 4, repsLabel: "10-12", category: "Activator", tone: "pink",
+        prevWeights: [40, 50, 50, 60], photo: PH.legMachine,
+        tempoNote: "Rango parcial: baja hasta ~90° de rodilla, nunca a profundidad completa. Sube el peso, no el rango.",
+        kneeNote: "Rango parcial obligatorio — nunca profundidad completa en este ejercicio.",
+        explanation: "Dominante de cuádriceps del día, en rango parcial por tu condición articular — suma volumen sin exponer la rodilla a flexión completa.",
+        hasAlt: true, altName: "Leg Press (Panatta), rango parcial", altPhoto: PH.legPress, altExplanation: "Mismo patrón de empuje de pierna con el mismo límite de rango." },
+      { name: "Kickback de glúteo en polea", setCount: 3, repsLabel: "15-20 por lado", category: "Pumper", tone: "yellow",
+        prevWeights: [15, 15, 20], photo: PH.cable,
+        tempoNote: "Rango corto, sin pausa — el objetivo es acumular repeticiones y sentir el bombeo, no la carga máxima.",
+        kneeNote: null,
+        explanation: "Pumper de cierre: rango corto y muchas repeticiones para terminar de fatigar el glúteo ya activado y estirado.",
+        hasAlt: true, altName: "Abducción de cadera de pie en polea baja", altPhoto: PH.cable, altExplanation: "Mismo objetivo de bombeo con otro patrón de movimiento — sirve si la polea de kickback está ocupada." },
+    ] },
+  { label: "Día 2 · Espalda y Bíceps", focusNote: "Pull: espalda y bíceps. Sin restricción de rodilla — enfoque en tracción y aprieto escapular.", knee: false, tags: false,
+    exercises: [
+      { name: "Jalón al pecho en polea (agarre ancho)", setCount: 4, repsLabel: "10-12",
+        prevWeights: [45, 50, 50, 55], photo: PH.cable,
+        tempoNote: "Lleva la barra hasta la parte alta del pecho, aprieta los dorsales abajo antes de soltar.",
+        kneeNote: null,
+        explanation: "Dominante de dorsal ancho, base del día de espalda.",
+        hasAlt: true, altName: "Remo en máquina Panatta (agarre alto)", altPhoto: PH.cableRow, altExplanation: "Mismo énfasis en dorsal con patrón de tracción horizontal — sirve si la polea está ocupada." },
+      { name: "Remo sentado en polea (agarre neutro)", setCount: 4, repsLabel: "10-12",
+        prevWeights: [50, 55, 55, 60], photo: PH.cableRow,
+        tempoNote: "Aprieta los omóplatos al final de cada rep, codos pegados al cuerpo.",
+        kneeNote: null,
+        explanation: "Espesor de espalda media, complementa el trabajo de ancho del jalón.",
+        hasAlt: true, altName: "Remo con mancuerna a una mano apoyada en banco", altPhoto: PH.dumbbells, altExplanation: "Mismo patrón de remo, unilateral — útil si la polea está ocupada." },
+      { name: "Face pull en polea (cuerda, altura alta)", setCount: 3, repsLabel: "15",
+        prevWeights: [15, 15, 18], photo: PH.cable,
+        tempoNote: "Tira hacia la cara separando las manos, codos altos, rotación externa al final.",
+        kneeNote: null,
+        explanation: "Deltoide posterior y salud de hombro — balancea el volumen de push de mañana con tracción.",
+        hasAlt: true, altName: "Pájaro con mancuernas inclinada al frente", altPhoto: PH.dumbbells, altExplanation: "Mismo enfoque en deltoide posterior sin polea." },
+      { name: "Curl de bíceps con barra Z", setCount: 3, repsLabel: "10-12",
+        prevWeights: [15, 17.5, 17.5], photo: PH.dumbbells,
+        tempoNote: "Sin balancear el torso, codos fijos a los costados.",
+        kneeNote: null,
+        explanation: "Bíceps con barra angulada, más cómoda para la muñeca que la barra recta.",
+        hasAlt: true, altName: "Curl de bíceps en polea baja con barra recta", altPhoto: PH.cable, altExplanation: "Mismo movimiento con tensión constante de polea." },
+      { name: "Curl martillo con mancuernas", setCount: 3, repsLabel: "12",
+        prevWeights: [10, 10, 12], photo: PH.dumbbells,
+        tempoNote: "Agarre neutro todo el recorrido, sin rotar la muñeca.",
+        kneeNote: null,
+        explanation: "Agarre neutro que trabaja braquial y antebrazo, cierra el día de pull.",
+        hasAlt: true, altName: "Curl martillo en polea con cuerda", altPhoto: PH.cable, altExplanation: "Mismo agarre neutro con tensión constante." },
+    ] },
+  { label: "Día 3 · Cuádriceps", focusNote: "Dominante de cuádriceps. Rango parcial en máquinas de empuje de pierna, sin conflicto en aislamiento.", knee: true, tags: true,
+    exercises: [
+      { name: "Leg Press (Panatta, rango parcial)", setCount: 4, repsLabel: "10-12", category: "Activator", tone: "pink",
+        prevWeights: [80, 90, 100, 100], photo: PH.legPress,
+        tempoNote: "Rango parcial: baja hasta ~90° de rodilla. Sube el peso entre semanas, no el rango.",
+        kneeNote: "Rango parcial obligatorio — nunca profundidad completa en este ejercicio.",
+        explanation: "Activator de cuádriceps con carga pesada en rango parcial. Complementa al hack squat del día de glúteo sin repetir el mismo ejercicio.",
+        hasAlt: true, altName: "Hack Squat (Panatta), rango parcial", altPhoto: PH.legMachine, altExplanation: "Mismo patrón de empuje de pierna y mismo límite de rango — cámbialo si el leg press está ocupado." },
+      { name: "Zancada caminando con mancuernas (rango controlado)", setCount: 3, repsLabel: "10 por lado", category: "Stretcher", tone: "orange",
+        prevWeights: [12, 12, 14], photo: PH.dumbbells,
+        tempoNote: "Pasos cortos, sin bajar la rodilla trasera al piso — mismo criterio de rango controlado de siempre.",
+        kneeNote: "Rango controlado: sin bajar la rodilla trasera al piso.",
+        explanation: "Stretcher de cuádriceps/glúteo unilateral en movimiento, distinto a la búlgara estática del día 1.",
+        hasAlt: true, altName: "Leg press unilateral (rango parcial)", altPhoto: PH.legPress, altExplanation: "Mismo estímulo unilateral con carga guiada — útil si el espacio para zancadas está ocupado." },
+      { name: "Extensión de cuádriceps en máquina", setCount: 4, repsLabel: "12-15", category: "Activator", tone: "pink",
+        prevWeights: [35, 40, 40, 45], photo: PH.legExtension,
+        tempoNote: "Aprieta arriba sin bloquear seco la rodilla. Rango cómodo, controlado en la bajada.",
+        kneeNote: null,
+        explanation: "Aislamiento directo de cuádriceps: sin carga axial ni impacto sobre la rodilla, por eso es seguro en rango completo pese a tu restricción.",
+        hasAlt: true, altName: "Sentadilla goblet con mancuerna (rango parcial)", altPhoto: PH.dumbbells, altExplanation: "Alternativa con carga axial ligera — mantén el mismo límite de rango parcial que en hack squat." },
+      { name: "Step-up en banco bajo (rango controlado)", setCount: 3, repsLabel: "10 por lado", category: "Stretcher", tone: "orange",
+        prevWeights: [10, 10, 12], photo: PH.dumbbells,
+        tempoNote: "Banco bajo, sin pasar de ~90° de flexión de rodilla al subir.",
+        kneeNote: "Usa banco bajo — sin pasar de ~90° de flexión de rodilla.",
+        explanation: "Stretcher unilateral con altura controlada, útil para corregir asimetrías entre piernas.",
+        hasAlt: true, altName: "Leg press unilateral (rango parcial)", altPhoto: PH.legPress, altExplanation: "Mismo enfoque unilateral con carga guiada — cámbialo si el banco está ocupado." },
+      { name: "Abducción de cadera en máquina", setCount: 3, repsLabel: "15-20", category: "Pumper", tone: "yellow",
+        prevWeights: [30, 30, 35], photo: PH.legMachine,
+        tempoNote: "Rango corto, ritmo constante, sin pausa entre repeticiones.",
+        kneeNote: null,
+        explanation: "Pumper de glúteo medio que complementa el trabajo de cuádriceps del día y cierra con bombeo.",
+        hasAlt: true, altName: "Caminata lateral con banda (monster walk)", altPhoto: PH.gym, altExplanation: "Mismo enfoque de glúteo medio sin máquina — sirve si está ocupada." },
+    ] },
+  { label: "Día 4 · Hombro y Tríceps", focusNote: "Push: hombro y tríceps, sin ejercicios de pecho. Sin restricción de rodilla.", knee: false, tags: false,
+    exercises: [
+      { name: "Press militar con mancuernas sentado", setCount: 4, repsLabel: "8-10",
+        prevWeights: [14, 14, 16, 16], photo: PH.dumbbells,
+        tempoNote: "Empuje vertical controlado, sin arquear la espalda baja al final del recorrido.",
+        kneeNote: null,
+        explanation: "Dominante de hombro del día, empuje vertical con mancuernas para trabajar los tres deltoides.",
+        hasAlt: true, altName: "Press de hombro en máquina Panatta", altPhoto: PH.legMachine, altExplanation: "Mismo patrón de empuje vertical, guiado — útil si el espacio de mancuernas está ocupado." },
+      { name: "Elevaciones laterales con mancuernas", setCount: 4, repsLabel: "12-15",
+        prevWeights: [8, 8, 10, 10], photo: PH.dumbbells,
+        tempoNote: "Sube hasta la altura del hombro, codos con leve flexión, sin impulso.",
+        kneeNote: null,
+        explanation: "Deltoide medio — el que da el ancho de hombro que buscas.",
+        hasAlt: true, altName: "Elevación lateral en polea baja (una mano)", altPhoto: PH.cable, altExplanation: "Mismo músculo con tensión constante de polea." },
+      { name: "Press de tríceps en polea (cuerda)", setCount: 4, repsLabel: "12-15",
+        prevWeights: [25, 25, 30, 30], photo: PH.cable,
+        tempoNote: "Aprieta abajo sin abrir los codos hacia los lados.",
+        kneeNote: null,
+        explanation: "Aislamiento de tríceps con tensión constante de polea, base del trabajo de tríceps del día.",
+        hasAlt: true, altName: "Press francés con mancuerna", altPhoto: PH.dumbbells, altExplanation: "Mismo enfoque de tríceps con carga libre." },
+      { name: "Extensión de tríceps overhead en polea (de espaldas)", setCount: 3, repsLabel: "12-15",
+        prevWeights: [15, 15, 18], photo: PH.cable,
+        tempoNote: "De espaldas a la polea, cuerda por detrás de la cabeza — estiramiento marcado de la cabeza larga arriba.",
+        kneeNote: null,
+        explanation: "Enfatiza la cabeza larga del tríceps por el estiramiento overhead, distinto al press de cuerda.",
+        hasAlt: true, altName: "Extensión de tríceps overhead con mancuerna a dos manos", altPhoto: PH.dumbbells, altExplanation: "Mismo estiramiento overhead sin polea." },
+      { name: "Elevación frontal con disco", setCount: 3, repsLabel: "12",
+        prevWeights: [8, 8, 10], photo: PH.dumbbells,
+        tempoNote: "Sube hasta la altura de los ojos, sin balancear el torso.",
+        kneeNote: null,
+        explanation: "Deltoide anterior, cierre del día de push.",
+        hasAlt: true, altName: "Elevación frontal con mancuernas alternado", altPhoto: PH.dumbbells, altExplanation: "Mismo músculo objetivo, alternando brazos." },
+    ] },
+  { label: "Día 5 · Cadena posterior", focusNote: "Cadena posterior y abducción: isquios, glúteo y estabilidad de cadera.", knee: true, tags: true,
+    exercises: [
+      { name: "Good Morning en Smith Machine", setCount: 4, repsLabel: "10-12", category: "Stretcher", tone: "orange",
+        prevWeights: [20, 20, 25, 25], photo: PH.smith,
+        tempoNote: "Bisagra de cadera con rodillas suaves, barra guiada en el riel. Baja hasta sentir el estiramiento en isquios.",
+        kneeNote: null,
+        explanation: "Stretcher de cadena posterior: la barra guiada te da estabilidad extra, sin carga axial de rodilla — cero conflicto con tu restricción.",
+        hasAlt: true, altName: "Peso muerto rumano con barra libre", altPhoto: PH.dumbbells, altExplanation: "Mismo patrón de bisagra de cadera sin el riel guiado — útil si la Smith Machine está ocupada." },
+      { name: "Leg Curl acostado (Panatta)", setCount: 4, repsLabel: "10-12", category: "Activator", tone: "pink",
+        prevWeights: [25, 30, 30, 35], photo: PH.legMachine,
+        tempoNote: "Rango completo controlado en camilla — sin estrés de rodilla en carga porque no hay peso axial.",
+        kneeNote: null,
+        explanation: "Activator de isquiotibiales, aislado y seguro para tu rodilla al no cargar peso a través de la articulación.",
+        hasAlt: true, altName: "Leg curl sentado (Panatta)", altPhoto: PH.legMachine, altExplanation: "Mismo aislamiento de isquios en otra máquina — cámbialo si la camilla está ocupada." },
+      { name: "Back extension (espalda redondeada, pies 45°)", setCount: 3, repsLabel: "12-15", category: "Stretcher", tone: "orange",
+        prevWeights: [10, 10, 15], photo: PH.gym,
+        tempoNote: "Espalda redondeada y pies a 45° hacia afuera — tu técnica ya validada para enfatizar glúteo sobre lumbares.",
+        kneeNote: null,
+        explanation: "Técnica validada contigo: redondear la espalda baja y abrir los pies a 45° traslada el énfasis del lumbar al glúteo.",
+        hasAlt: true, altName: "Hip hinge con banda a nivel de rodillas (isométrico)", altPhoto: PH.gym, altExplanation: "Mismo patrón de bisagra con tensión constante de banda — sirve si el banco de back extension está ocupado." },
+      { name: "Hip Thrust con banda a nivel de rodillas", setCount: 3, repsLabel: "15 (pausa isométrica)", category: "Pumper", tone: "yellow",
+        noWeight: true, photo: PH.gym,
+        tempoNote: "Banda tensando hacia afuera en cada rep, pausa de 2 segundos arriba empujando las rodillas contra la banda.",
+        kneeNote: null,
+        explanation: "Pumper con énfasis en abducción isométrica — sin carga externa, todo el trabajo lo hace la tensión de la banda contra las rodillas.",
+        hasAlt: true, altName: "Puente de glúteo con banda (bodyweight)", altPhoto: PH.gym, altExplanation: "Mismo patrón sin banco, apoyada en el piso — útil si el banco está ocupado." },
+      { name: "Abducción de cadera de pie en polea baja", setCount: 3, repsLabel: "15-20 por lado", category: "Pumper", tone: "yellow",
+        prevWeights: [10, 10, 12], photo: PH.cable,
+        tempoNote: "Rango corto y controlado, sin balancear el torso para generar impulso.",
+        kneeNote: null,
+        explanation: "Cierre de bombeo en glúteo medio con un patrón distinto a la máquina del día 2 — más variedad de ángulo en la semana.",
+        hasAlt: true, altName: "Almeja con banda elástica (clamshell)", altPhoto: PH.gym, altExplanation: "Mismo músculo objetivo sin polea — sirve si está ocupada." },
+    ] },
+];
+
+const INBODY_SEED = [
+  { date: "27.04.2026", peso: 67.0, mme: 28.5, pgc: 23.4, cadera: 0.83, puntuacion: 84 },
+  { date: "11.06.2026", peso: 66.6, mme: 28.6, pgc: 23.1, cadera: 0.85, puntuacion: 84 },
+  { date: "21.07.2026", peso: 67.8, mme: 28.9, pgc: 23.2, cadera: 0.84, puntuacion: 85 },
+];
+const fmtDelta = (curr, prev, unit) => {
+  if (prev == null) return "—";
+  const d = Math.round((curr - prev) * 100) / 100;
+  if (d === 0) return "sin cambio";
+  return (d > 0 ? "+" : "") + d + unit + " vs. anterior";
+};
+
+const MAIN_COMPOUNDS = [
+  { name: "Hip Thrust en Booty Builder (Panatta)", day: "Día 1 · Glúteo", sessions: [70, 70, 70] },
+  { name: "Leg Press (Panatta, rango parcial)", day: "Día 3 · Cuádriceps", sessions: [90, 95, 100] },
+  { name: "Good Morning en Smith Machine", day: "Día 5 · Cadena posterior", sessions: [20, 22.5, 25] },
+  { name: "Press militar con mancuernas sentado", day: "Día 4 · Hombro y Tríceps", sessions: [14, 14, 14] },
+  { name: "Jalón al pecho en polea (agarre ancho)", day: "Día 2 · Espalda y Bíceps", sessions: [50, 50, 55] },
+];
+const parseDDMMYYYY = (s) => { const [d, m, y] = s.split("."); return new Date(+y, +m - 1, +d); };
+const TODAY = new Date(2026, 7, 8); // 2026-08-08
+
+const SECTION_LABELS = [
+  { key: "routine", label: "Rutina" },
+  { key: "inbody", label: "Progreso" },
+  { key: "checkup", label: "Chequeo" },
+  { key: "summary", label: "Seguimiento" },
+];
+
+/* window.claude.complete only exists inside the Claude Artifact runtime. */
+const HAS_CLAUDE = !!(window.claude && typeof window.claude.complete === "function");
+const NO_CLAUDE_MSG = "El análisis y el chat de /gym-coach usan IA que solo corre dentro de la app de Claude (Artifact). Abajo tienes tus datos base de la semana; el resto de la app funciona igual aquí.";
+
+/* ==================== State ==================== */
+const state = {
+  view: "routine", activeDay: 0,
+  open: {}, altOpen: {}, completed: {}, weights: {},
+  inbody: INBODY_SEED.map(r => ({ ...r })),
+  newInbody: { date: "", peso: "", mme: "", pgc: "", cadera: "", puntuacion: "", error: "" },
+  analysisText: "", analysisError: "", loadingAnalysis: false, analysisFetchedFor: null,
+  chatMessages: [], chatInput: "", chatLoading: false,
+};
+let summaryTextSnapshot = "";
+
+/* ==================== Helpers ==================== */
+const root = document.getElementById("root");
+const esc = s => String(s == null ? "" : s).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;");
+
+/* ==================== Views ==================== */
+function headerHTML(){
+  const v = state.view;
+  const headerTitle = v === "routine" ? DAYS[state.activeDay].label
+    : v === "inbody" ? "Historial InBody"
+    : v === "checkup" ? "Chequeo de progreso" : "Seguimiento";
+  const sections = SECTION_LABELS.map(s =>
+    `<button class="daytab ${v === s.key ? "active" : ""}" data-action="setView" data-view="${s.key}">${esc(s.label)}</button>`
+  ).join("");
+  const days = v === "routine"
+    ? `<div class="tabrow days">${DAYS.map((d, i) =>
+        `<button class="daytab ${i === state.activeDay ? "active" : ""}" style="font-size:12px;" data-action="setDay" data-day="${i}">${esc(d.label)}</button>`
+      ).join("")}</div>`
+    : "";
+  return `
+    <div class="hdr">
+      <div class="hdr-top">
+        <div class="eyebrow">Linis Gym App · Mesociclo actual</div>
+        <h2>${esc(headerTitle)}</h2>
+      </div>
+      <div class="tabrow">${sections}</div>
+      ${days}
+    </div>`;
+}
+
+function setsRowsHTML(ex, key, alt){
+  const prev = alt ? (ex.altPrevWeights || ex.prevWeights) : ex.prevWeights;
+  const kind = alt ? "alt-" : "";
+  return prev.map((pw, si) => {
+    const wk = `${key}-${kind}${si}`;
+    const val = state.weights[wk] ?? "";
+    return `<div style="display:flex;align-items:center;gap:10px;">
+        <div style="width:16px;flex:none;font-size:12px;" class="muted">${si + 1}</div>
+        <div style="width:64px;flex:none;font-size:11px;" class="muted">${esc(pw)} kg ant.</div>
+        <input class="input" style="flex:1;" inputmode="decimal" placeholder="${esc(pw)}" value="${esc(val)}" data-action="setWeight" data-wk="${wk}" data-exkey="${key}" data-setcount="${ex.setCount}">
+        <div style="width:22px;flex:none;font-size:11px;" class="muted">kg</div>
+      </div>`;
+  }).join("");
+}
+
+function exerciseHTML(ex, i){
+  const key = state.activeDay + "-" + i;
+  const isOpen = !!state.open[key];
+  const altOpen = !!state.altOpen[key];
+  const completed = !!state.completed[key];
+  const hasSets = !ex.noWeight;
+  const setsReps = ex.setCount + " x " + ex.repsLabel;
+  const tone = TONE_MAP[ex.tone] || "neutral";
+
+  const badge = ex.category
+    ? `<span class="tag tag-${tone}" style="flex:none;">${esc(ex.category)}</span>` : "";
+
+  let detail = "";
+  if (isOpen){
+    const kneeInline = ex.kneeNote
+      ? `<div style="margin-top:10px;padding:8px 12px;background:var(--color-accent-900);border-radius:var(--radius-sm);font-size:12px;color:var(--color-accent-200);">⚠ ${esc(ex.kneeNote)}</div>` : "";
+
+    const weightsBlock = hasSets ? `<div style="margin-top:14px;">
+        <div style="font-size:11px;letter-spacing:0.08em;text-transform:uppercase;margin-bottom:8px;" class="muted">Registrar peso</div>
+        <div style="display:flex;flex-direction:column;gap:8px;">${setsRowsHTML(ex, key, false)}</div>
+      </div>` : "";
+
+    let altBlock = "";
+    if (altOpen){
+      if (ex.hasAlt){
+        const altWeights = hasSets ? `<div style="margin-top:14px;">
+            <div style="font-size:11px;letter-spacing:0.08em;text-transform:uppercase;margin-bottom:8px;" class="muted">Registrar peso · usaste la alternativa</div>
+            <div style="display:flex;flex-direction:column;gap:8px;">${setsRowsHTML(ex, key, true)}</div>
+          </div>` : "";
+        altBlock = `<div style="margin-top:14px;padding:14px;background:var(--color-neutral-900);border-radius:var(--radius-md);">
+            <div style="font-size:11px;letter-spacing:0.08em;text-transform:uppercase;margin-bottom:8px;" class="muted">Alternativa · máquina ocupada</div>
+            <div style="display:flex;gap:10px;margin-bottom:10px;">
+              <div style="position:relative;width:96px;height:96px;flex:none;border-radius:10px;overflow:hidden;background:var(--color-neutral-800);">
+                <img class="lighten" src="${esc(ex.altPhoto)}" alt="${esc(ex.altName)}" loading="lazy" referrerpolicy="no-referrer" style="width:100%;height:100%;object-fit:cover;display:block;" onerror="this.style.display='none';this.nextElementSibling.style.display='flex';">
+                <div style="position:absolute;inset:0;display:none;align-items:center;justify-content:center;text-align:center;padding:6px;font-size:11px;color:var(--color-neutral-500);">Foto máquina</div>
+              </div>
+              <a href="${esc(yt(ex.altName + " técnica ejecución"))}" target="_blank" rel="noopener" class="lighten" style="flex:none;width:96px;height:96px;border-radius:10px;background:var(--color-neutral-800);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;color:var(--color-accent);text-decoration:none;">
+                <span style="font-size:18px;">▶</span><span style="font-size:11px;">Ver video</span>
+              </a>
+            </div>
+            <div style="font-weight:500;font-size:13px;">${esc(ex.altName)}</div>
+            <div style="margin-top:4px;font-size:13px;opacity:0.8;line-height:1.55;">${esc(ex.altExplanation)}</div>
+            ${altWeights}
+          </div>`;
+      } else {
+        altBlock = `<div style="margin-top:14px;padding:12px 14px;background:var(--color-neutral-900);border-radius:var(--radius-md);font-size:13px;color:var(--color-accent-300);">Este ejercicio no tiene alternativa registrada.</div>`;
+      }
+    }
+
+    detail = `<div style="padding:0 16px 18px;border-top:1px solid var(--color-divider);">
+        <div style="padding-top:14px;font-size:13px;opacity:0.8;line-height:1.55;">${esc(ex.tempoNote)}</div>
+        ${kneeInline}
+        <div style="margin-top:12px;font-size:11px;letter-spacing:0.08em;text-transform:uppercase;" class="muted">Técnica</div>
+        <div style="margin-top:4px;font-size:13px;opacity:0.9;line-height:1.55;">${esc(ex.explanation)}</div>
+        ${weightsBlock}
+        <div style="margin-top:14px;">
+          <button class="btn btn-secondary" data-action="toggleAlt" data-key="${key}">${altOpen ? "Ocultar alternativa" : "Ver alternativa"}</button>
+        </div>
+        ${altBlock}
+      </div>`;
+  }
+
+  return `<div class="card elev-sm" style="padding:0;gap:0;overflow:hidden;">
+      <div style="display:flex;align-items:center;gap:12px;padding:14px 16px;">
+        <div class="chk ${completed ? "done" : ""}" data-action="toggleComplete" data-key="${key}" role="checkbox" aria-checked="${completed}">${completed ? "✓" : ""}</div>
+        <div data-action="toggleOpen" data-key="${key}" style="flex:1;min-width:0;cursor:pointer;display:flex;align-items:center;gap:12px;">
+          <div style="flex:1;min-width:0;${completed ? "opacity:0.5;text-decoration:line-through;" : ""}">
+            <div style="font-weight:500;font-size:14px;">${esc(ex.name)}</div>
+            <div style="font-size:12px;margin-top:2px;" class="muted">${esc(setsReps)}</div>
+          </div>
+          ${badge}
+          <div class="chev" style="transform:rotate(${isOpen ? 180 : 0}deg);">▾</div>
+        </div>
+      </div>
+      ${detail}
+    </div>`;
+}
+
+function routineBodyHTML(){
+  const day = DAYS[state.activeDay];
+  const knee = day.knee
+    ? `<div style="margin:10px 20px 0;padding:10px 14px;background:var(--color-accent-900);border:1px solid var(--color-accent-800);border-radius:var(--radius-md);font-size:12px;color:var(--color-accent-200);line-height:1.5;">Recordatorio fijo: rango controlado en ejercicios de rodilla marcados abajo — nunca profundidad completa. Sin ejercicios de pecho ni pantorrilla.</div>` : "";
+  const tags = day.tags
+    ? `<div style="display:flex;gap:8px;margin:14px 20px 4px;flex-wrap:wrap;">
+        <span class="tag tag-accent">🟣 Activator = carga pesada, acortado</span>
+        <span class="tag tag-accent-2">🟠 Stretcher = carga en elongación</span>
+        <span class="tag tag-neutral">🟡 Pumper = alto rango, bombeo</span>
+      </div>` : "";
+  const list = day.exercises.map((ex, i) => exerciseHTML(ex, i)).join("");
+  return `
+    <div style="padding:14px 20px 4px;font-size:13px;opacity:0.75;line-height:1.5;">${esc(day.focusNote)}</div>
+    ${knee}
+    ${tags}
+    <div style="padding:16px 20px 40px;display:flex;flex-direction:column;gap:12px;">${list}</div>
+    <div style="padding:0 20px 32px;text-align:center;font-size:11px;color:var(--color-neutral-600);">Fotos de máquina: reemplázalas cuando tengas las tuyas. Video: enlace de búsqueda mientras no hay grabación propia.</div>`;
+}
+
+function inbodyBodyHTML(){
+  const rows = state.inbody.map((row, i) => {
+    const prev = i > 0 ? state.inbody[i - 1] : null;
+    return {
+      date: row.date, isLatest: i === state.inbody.length - 1,
+      peso: row.peso + " kg", pesoDelta: fmtDelta(row.peso, prev && prev.peso, " kg"),
+      mme: row.mme + " kg", mmeDelta: fmtDelta(row.mme, prev && prev.mme, " kg"),
+      pgc: row.pgc + "%", pgcDelta: fmtDelta(row.pgc, prev && prev.pgc, "pp"),
+      cadera: row.cadera, puntuacion: row.puntuacion + "/100",
+    };
+  }).reverse();
+
+  const metric = (label, val, delta) =>
+    `<div><div style="font-size:11px;" class="muted">${label}</div><div style="font-size:13px;font-weight:500;">${esc(val)}</div><div style="font-size:11px;" class="muted">${esc(delta)}</div></div>`;
+
+  const cards = rows.map(r => `
+    <div class="card elev-sm">
+      <div style="display:flex;align-items:center;justify-content:space-between;">
+        <div style="font-weight:500;font-size:13px;">${esc(r.date)}</div>
+        ${r.isLatest ? `<span class="tag tag-accent">Más reciente</span>` : ""}
+      </div>
+      <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-top:6px;">
+        ${metric("Peso", r.peso, r.pesoDelta)}${metric("MME", r.mme, r.mmeDelta)}${metric("PGC", r.pgc, r.pgcDelta)}
+      </div>
+      <div style="display:flex;gap:16px;margin-top:6px;font-size:11px;" class="muted">
+        <div>Cintura-cadera: <span style="color:var(--color-text);opacity:0.85;">${esc(r.cadera)}</span></div>
+        <div>Puntuación InBody: <span style="color:var(--color-text);opacity:0.85;">${esc(r.puntuacion)}</span></div>
+      </div>
+    </div>`).join("");
+
+  const nf = state.newInbody;
+  const field = (label, ph, key) =>
+    `<div class="field"><label>${esc(label)}</label><input class="input" placeholder="${esc(ph)}" value="${esc(nf[key])}" data-action="setInbody" data-field="${key}"></div>`;
+
+  return `
+    <div style="padding:16px 20px 8px;"><div style="font-size:13px;opacity:0.8;line-height:1.55;">Historial de mediciones. Un InBody nuevo se registra aquí, pero no dispara un rediseño automático de la rutina — eso solo pasa si reportas una señal real (estancamiento, desbalance, plateau).</div></div>
+    <div style="padding:0 20px 8px;display:flex;flex-direction:column;gap:10px;">${cards}</div>
+    <div style="margin:8px 20px 40px;padding:16px;background:var(--color-surface);border-radius:var(--radius-lg);">
+      <div style="font-size:11px;letter-spacing:0.08em;text-transform:uppercase;margin-bottom:10px;" class="muted">Registrar nueva medición</div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">
+        ${field("Fecha","DD.MM.AAAA","date")}${field("Peso (kg)","67.0","peso")}${field("MME (kg)","28.9","mme")}${field("PGC (%)","23.2","pgc")}${field("Cintura-cadera","0.84","cadera")}${field("Puntuación","85","puntuacion")}
+      </div>
+      <div style="margin-top:12px;"><button class="btn btn-primary" data-action="saveInbody">Guardar medición</button></div>
+      ${nf.error ? `<div style="margin-top:8px;font-size:12px;color:var(--color-accent-300);">${esc(nf.error)}</div>` : ""}
+    </div>`;
+}
+
+function checkupBodyHTML(){
+  const flags = MAIN_COMPOUNDS.filter(c => c.sessions.every(v => v === c.sessions[0]))
+    .map(c => ({ name: c.name, day: c.day, reason: `${c.sessions.length} sesiones seguidas en ${c.sessions[0]} kg` }));
+  const lastInbody = state.inbody[state.inbody.length - 1];
+  const weeksSince = Math.floor((TODAY - parseDDMMYYYY(lastInbody.date)) / (1000 * 60 * 60 * 24 * 7));
+  const inbodyMessage = weeksSince >= 6
+    ? `Última medición hace ${weeksSince} semanas (${lastInbody.date}) — toca InBody nuevo.`
+    : `Última medición hace ${weeksSince} semanas (${lastInbody.date}). Faltan ${6 - weeksSince}-${8 - weeksSince} semanas para la ventana de 6-8 semanas.`;
+  const mme = state.inbody.map(r => r.mme);
+  const mmeMessage = mme.length < 3
+    ? "MME: faltan mediciones para evaluar plateau (se necesitan al menos 2-3 seguidas)."
+    : (mme[mme.length-1] === mme[mme.length-2] && mme[mme.length-2] === mme[mme.length-3]
+      ? "MME sin cambio en las últimas 3 mediciones — posible plateau."
+      : "MME viene subiendo entre mediciones — sin señal de plateau.");
+
+  const routineCard = flags.length === 0
+    ? `<div style="font-size:13px;line-height:1.55;margin-top:6px;">Todo progresando, sin señales de estancamiento.</div>`
+    : `<div style="display:flex;flex-direction:column;gap:8px;margin-top:8px;">${flags.map(fl =>
+        `<div style="padding:10px 12px;background:var(--color-accent-900);border-radius:var(--radius-sm);">
+          <div style="font-size:13px;font-weight:500;color:var(--color-accent-200);">${esc(fl.name)}</div>
+          <div style="font-size:11px;color:var(--color-accent-300);margin-top:2px;">${esc(fl.day)} · ${esc(fl.reason)}</div>
+        </div>`).join("")}</div>`;
+
+  return `
+    <div style="padding:16px 20px 8px;"><div style="font-size:13px;opacity:0.8;line-height:1.55;">Solo señala — la decisión de qué hacer con esto sigue siendo tuya.</div></div>
+    <div style="padding:0 20px 40px;display:flex;flex-direction:column;gap:12px;">
+      <div class="card elev-sm">
+        <div class="card-kicker">InBody</div>
+        <div style="font-size:13px;line-height:1.55;margin-top:6px;">${esc(inbodyMessage)}</div>
+      </div>
+      <div class="card elev-sm">
+        <div class="card-kicker">Rutina</div>
+        ${routineCard}
+        <div style="font-size:11px;margin-top:10px;" class="muted">${esc(mmeMessage)}</div>
+      </div>
+    </div>`;
+}
+
+function summaryBodyHTML(){
+  const summaryDays = DAYS.map((d, di) => ({
+    label: d.label,
+    exercises: d.exercises.filter(ex => !ex.noWeight).flatMap((ex, ei) => {
+      const key = `${di}-${ei}-0`, altKey = `${di}-${ei}-alt-0`;
+      const thisWeek = state.weights[key], lastWeek = ex.prevWeights[0];
+      const rows = [{ name: ex.name, compareLabel: thisWeek ? `${thisWeek} kg (ant. ${lastWeek} kg)` : `sin registrar (ant. ${lastWeek} kg)` }];
+      const altThisWeek = state.weights[altKey];
+      if (altThisWeek) rows.push({ name: `↳ ${ex.altName} (alternativa)`, compareLabel: `${altThisWeek} kg (ant. ${(ex.altPrevWeights || ex.prevWeights)[0]} kg)` });
+      return rows;
+    }),
+  }));
+
+  const analysisInner = state.loadingAnalysis
+    ? `<div style="font-size:13px;margin-top:8px;" class="muted">Generando análisis con tu historial...</div>`
+    : (state.analysisText
+        ? `<div style="font-size:13px;opacity:0.9;line-height:1.6;margin-top:8px;white-space:pre-wrap;">${esc(state.analysisText)}</div>`
+        : (state.analysisError ? `<div style="font-size:12px;color:var(--color-accent-300);margin-top:8px;line-height:1.5;">${esc(state.analysisError)}</div>` : ""));
+
+  const chatBubbles = state.chatMessages.map(m =>
+    `<div style="display:flex;justify-content:${m.role === "user" ? "flex-end" : "flex-start"};">
+      <div style="max-width:80%;padding:8px 12px;border-radius:var(--radius-md);font-size:13px;line-height:1.5;background:${m.role === "user" ? "var(--color-accent-900)" : "var(--color-neutral-900)"};color:${m.role === "user" ? "var(--color-accent-200)" : "var(--color-text)"};white-space:pre-wrap;">${esc(m.text)}</div>
+    </div>`).join("");
+
+  const daysData = summaryDays.map(d => `
+    <div class="card elev-sm">
+      <div class="card-kicker">${esc(d.label)}</div>
+      <div style="display:flex;flex-direction:column;gap:8px;margin-top:8px;">
+        ${d.exercises.map(ex => `<div style="display:flex;align-items:center;justify-content:space-between;gap:8px;">
+          <div style="font-size:13px;min-width:0;">${esc(ex.name)}</div>
+          <div style="flex:none;font-size:12px;white-space:nowrap;" class="muted">${esc(ex.compareLabel)}</div>
+        </div>`).join("")}
+      </div>
+    </div>`).join("");
+
+  const analysisDisabled = HAS_CLAUDE ? "" : "disabled";
+  return `
+    <div style="margin:16px 20px 0;padding:10px 14px;background:var(--color-accent-900);border:1px solid var(--color-accent-800);border-radius:var(--radius-md);font-size:12px;color:var(--color-accent-200);line-height:1.5;">Recordatorio semanal: tu análisis de /gym-coach usa tu historial de peso/reps e InBody como contexto.</div>
+    <div style="padding:14px 20px 8px;">
+      <div class="card elev-sm">
+        <div class="card-kicker">Análisis de /gym-coach · esta semana</div>
+        ${analysisInner}
+        <div style="margin-top:12px;"><button class="btn btn-secondary" data-action="refreshAnalysis" ${analysisDisabled}>Regenerar análisis</button></div>
+      </div>
+    </div>
+    <div style="padding:0 20px 8px;">
+      <div class="card elev-sm" style="gap:0;padding:0;overflow:hidden;">
+        <div class="card-kicker" style="padding:16px 16px 8px;">Pregúntale a /gym-coach</div>
+        <div style="max-height:280px;overflow-y:auto;padding:8px 16px;display:flex;flex-direction:column;gap:10px;">
+          ${chatBubbles || `<div style="font-size:12px;" class="muted">${HAS_CLAUDE ? "Escribe una pregunta para empezar." : "Chat disponible dentro de la app de Claude."}</div>`}
+          ${state.chatLoading ? `<div style="font-size:12px;" class="muted">/gym-coach está escribiendo...</div>` : ""}
+        </div>
+        <div style="display:flex;gap:8px;padding:12px 16px;border-top:1px solid var(--color-divider);">
+          <input class="input" style="flex:1;" placeholder="Ej: ¿debería subir peso en hip thrust?" value="${esc(state.chatInput)}" data-action="setChat" ${HAS_CLAUDE ? "" : "disabled"}>
+          <button class="btn btn-primary" data-action="sendChat" ${HAS_CLAUDE ? "" : "disabled"}>Enviar</button>
+        </div>
+      </div>
+    </div>
+    <div style="padding:14px 20px 40px;display:flex;flex-direction:column;gap:12px;">
+      <div style="font-size:11px;letter-spacing:0.08em;text-transform:uppercase;" class="muted">Datos base de esta semana</div>
+      ${daysData}
+    </div>`;
+}
+
+/* ==================== Render ==================== */
+function render(){
+  const scrollY = window.scrollY;
+  let body;
+  switch (state.view){
+    case "inbody": body = inbodyBodyHTML(); break;
+    case "checkup": body = checkupBodyHTML(); break;
+    case "summary": body = summaryBodyHTML(); break;
+    default: body = routineBodyHTML();
+  }
+  root.innerHTML = headerHTML() + body;
+  window.scrollTo(0, scrollY);
+}
+
+/* ==================== AI (window.claude.complete) ==================== */
+function buildSummarySnapshot(){
+  const txt = DAYS.map((d, di) => {
+    const lines = d.exercises.filter(ex => !ex.noWeight).map((ex, ei) => {
+      const key = `${di}-${ei}-0`;
+      const tw = state.weights[key];
+      return `  ${ex.name}: ${tw ? `${tw} kg (ant. ${ex.prevWeights[0]} kg)` : `sin registrar (ant. ${ex.prevWeights[0]} kg)`}`;
+    });
+    return `${d.label}\n${lines.join("\n")}`;
+  }).join("\n\n");
+  summaryTextSnapshot = txt;
+  return txt;
+}
+
+async function runAnalysis(){
+  const context = buildSummarySnapshot();
+  if (!HAS_CLAUDE){
+    state.analysisError = NO_CLAUDE_MSG;
+    state.analysisFetchedFor = context;
+    render();
+    return;
+  }
+  state.loadingAnalysis = true; state.analysisError = ""; state.analysisFetchedFor = context;
+  render();
+  try {
+    const text = await window.claude.complete(
+      `Eres /gym-coach, entrenador de fuerza e hipertrofia de Lina, enfocado en volumen de pierna y glúteo. ` +
+      `Con este historial de peso registrado esta semana vs. la semana anterior, y el historial de InBody, da un análisis breve (4-6 líneas): qué progresó, qué se estancó, y una recomendación concreta. No apliques cambios, solo recomienda. Responde en texto plano, sin markdown (nada de #, **, -, etc.).\n\n` +
+      `Datos de la semana:\n${context}\n\nHistorial InBody:\n${INBODY_SEED.map(r => `${r.date}: peso ${r.peso}kg, MME ${r.mme}kg, PGC ${r.pgc}%`).join("\n")}`
+    );
+    state.analysisText = text; state.loadingAnalysis = false;
+  } catch (e) {
+    state.analysisError = "No se pudo generar el análisis en este momento. Intenta de nuevo."; state.loadingAnalysis = false;
+  }
+  render();
+}
+
+async function sendChat(){
+  const question = state.chatInput.trim();
+  if (!question || !HAS_CLAUDE) return;
+  state.chatMessages = [...state.chatMessages, { role: "user", text: question }];
+  state.chatInput = ""; state.chatLoading = true;
+  render();
+  try {
+    const text = await window.claude.complete(
+      `Eres /gym-coach, entrenador de fuerza e hipertrofia de Lina (glúteo y pierna). Contexto de su semana:\n${summaryTextSnapshot}\n\nPregunta de Lina: ${question}\n\nResponde breve y concreto, sin aplicar cambios a la rutina por tu cuenta. Responde en texto plano, sin markdown (nada de #, **, -, etc.).`
+    );
+    state.chatMessages = [...state.chatMessages, { role: "assistant", text }]; state.chatLoading = false;
+  } catch (e) {
+    state.chatMessages = [...state.chatMessages, { role: "assistant", text: "No pude responder en este momento, intenta de nuevo." }]; state.chatLoading = false;
+  }
+  render();
+}
+
+/* ==================== Events ==================== */
+root.addEventListener("click", (e) => {
+  const el = e.target.closest("[data-action]");
+  if (!el) return;
+  const a = el.getAttribute("data-action");
+  if (a === "setView"){
+    const v = el.getAttribute("data-view");
+    state.view = v;
+    render();
+    if (v === "summary" && state.analysisFetchedFor !== buildSummarySnapshot()) runAnalysis();
+  } else if (a === "setDay"){
+    const i = +el.getAttribute("data-day");
+    if (i !== state.activeDay){ state.activeDay = i; state.open = {}; state.altOpen = {}; }
+    render();
+  } else if (a === "toggleOpen"){
+    const k = el.getAttribute("data-key"); state.open[k] = !state.open[k]; render();
+  } else if (a === "toggleComplete"){
+    const k = el.getAttribute("data-key"); state.completed[k] = !state.completed[k]; render();
+  } else if (a === "toggleAlt"){
+    const k = el.getAttribute("data-key"); state.altOpen[k] = !state.altOpen[k]; render();
+  } else if (a === "saveInbody"){
+    saveInbody();
+  } else if (a === "refreshAnalysis"){
+    runAnalysis();
+  } else if (a === "sendChat"){
+    sendChat();
+  }
+});
+
+// silent state updates while typing (no re-render → focus preserved)
+root.addEventListener("input", (e) => {
+  const el = e.target.closest("[data-action]");
+  if (!el) return;
+  const a = el.getAttribute("data-action");
+  if (a === "setWeight") state.weights[el.getAttribute("data-wk")] = el.value;
+  else if (a === "setInbody"){ state.newInbody[el.getAttribute("data-field")] = el.value; state.newInbody.error = ""; }
+  else if (a === "setChat") state.chatInput = el.value;
+});
+
+// on blur of a weight field: recompute auto-complete, then re-render
+root.addEventListener("change", (e) => {
+  const el = e.target.closest("[data-action='setWeight']");
+  if (!el) return;
+  const exkey = el.getAttribute("data-exkey");
+  const setCount = +el.getAttribute("data-setcount");
+  const filled = prefix => Array.from({ length: setCount }, (_, i) => state.weights[`${prefix}${i}`]).every(v => v);
+  if (filled(`${exkey}-`) || filled(`${exkey}-alt-`)) state.completed[exkey] = true;
+  render();
+});
+
+function saveInbody(){
+  const f = state.newInbody;
+  if (!f.date || !f.peso || !f.mme || !f.pgc || !f.cadera || !f.puntuacion){
+    state.newInbody.error = "Completa los 6 campos antes de guardar."; render(); return;
+  }
+  state.inbody.push({ date: f.date, peso: parseFloat(f.peso), mme: parseFloat(f.mme), pgc: parseFloat(f.pgc), cadera: parseFloat(f.cadera), puntuacion: parseFloat(f.puntuacion) });
+  state.newInbody = { date: "", peso: "", mme: "", pgc: "", cadera: "", puntuacion: "", error: "" };
+  render();
+}
+
+render();
+</script>
+</body>
+</html>
