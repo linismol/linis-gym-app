@@ -7,7 +7,9 @@
    - CORS: permite el origen público de la app (maneja el preflight OPTIONS solo).
    - Pide un token de Entra ID con la identidad administrada del APIM y lo pone como Bearer.
    - Enruta a chat/completions del proyecto v1.
-   - Limita el abuso por IP (rate-limit-by-key).
+
+  NOTA: el tier Consumption NO soporta rate-limit; el tope de abuso/gasto se pone
+        con el límite de TPM del deployment (Foundry -> Deployments -> Edit).
 
   REQUISITOS (ver guía):
    1. Activa la identidad administrada (system-assigned) del APIM.
@@ -18,7 +20,6 @@
   Si la prueba da 401/403:
    - Cambia el resource a "https://cognitiveservices.azure.com" (ver comentario abajo).
    - Verifica que el rol RBAC ya se propagó (puede tardar unos minutos).
-   - Ya NO se necesita el Named Value "aoai-key".
 -->
 <policies>
   <inbound>
@@ -35,9 +36,6 @@
         <header>Content-Type</header>
       </allowed-headers>
     </cors>
-
-    <!-- Tope de abuso: 20 llamadas por minuto por IP del cliente -->
-    <rate-limit-by-key calls="20" renewal-period="60" counter-key="@(context.Request.IpAddress)" />
 
     <!-- Endpoint de proyecto Foundry (v1, OpenAI-compatible) -->
     <set-backend-service base-url="https://gymapp.services.ai.azure.com/api/projects/proj-gymapp/openai/v1" />
