@@ -48,12 +48,28 @@ app (github.io) ──POST {prompt}──► Azure Function (guarda la key) ─�
    | `AOAI_DEPLOYMENT` | `gpt-4.1-mini` |
    | `AOAI_API_VERSION` | `2025-01-01-preview` *(recomendado para gpt-4.1)* |
 
-10. Menú **CORS** → agrega **`https://linismol.github.io`** → **Save** (quita `*` si aparece).
+10. **CORS:** no lo configures en el portal — la función **ya devuelve los headers de CORS** ella misma. Déjalo **vacío** (si configuras CORS en el portal *y* en el código, salen headers duplicados y el navegador falla).
 11. Menú **Functions** → **+ Create** → **HTTP trigger** → nombre `coach` → **Create**.
 12. Función `coach` → **Code + Test**:
     - `index.js` → pega [`coach/index.js`](coach/index.js) → **Save**.
     - `function.json` → pega [`coach/function.json`](coach/function.json) → **Save**.
 13. **Get Function URL** → copia la URL (`https://linis-coach-fn.azurewebsites.net/api/coach?code=...`).
+
+## PARTE B (alternativa) — Flex Consumption (Linux) + GitHub Actions
+
+Si el plan **Consumption** clásico te da problemas al crear la Function App, usa **Flex Consumption**
+(Linux, también escala a cero y ~$0 para uso personal). En Flex **no se pega el código en el portal**;
+se despliega por paquete, y como el código ya está en el repo, lo hace **GitHub Actions** solo.
+
+- **B1.** Crea la Function App → hosting **Flex Consumption** · RG `LinisGymApp` · Runtime **Node 20** · misma región.
+- **B2.** Igual que en Parte B: agrega las **Environment variables** (`AOAI_ENDPOINT`, `AOAI_KEY`, `AOAI_DEPLOYMENT`, `AOAI_API_VERSION`). CORS: **vacío** (la función lo maneja).
+- **B3.** Function App → **Deployment / Overview** → **Get publish profile** (descarga un archivo `.PublishSettings`).
+- **B4.** En GitHub (repo `linismol/linis-gym-app`) → **Settings → Secrets and variables → Actions → New repository secret**:
+  - **Name:** `AZURE_FUNCTIONAPP_PUBLISH_PROFILE`
+  - **Value:** pega **todo** el contenido del archivo descargado.
+- **B5.** Si tu Function App **no** se llama `linis-coach-fn`, edita `app-name` en [`.github/workflows/deploy-coach.yml`](../.github/workflows/deploy-coach.yml).
+- **B6.** Dispara el deploy: pestaña **Actions** → *"Deploy /gym-coach function"* → **Run workflow** (o haz un push que toque `azure-coach/`).
+- **B7.** Al terminar (verde en Actions): Function App → función `coach` → **Get Function URL**.
 
 ## PARTE C — Conectar la app
 14. Pasa esa URL a Claude y se conecta en el `index.html` en vivo → chat + análisis funcionando en la URL pública.

@@ -1,0 +1,9 @@
+{
+  "name": "linis-coach",
+  "version": "1.0.0",
+  "description": "Proxy /gym-coach hacia Azure OpenAI (Azure Functions, modelo clásico).",
+  "private": true,
+  "engines": {
+    "node": ">=20"
+  }
+}
