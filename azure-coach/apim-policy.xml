@@ -1,16 +1,24 @@
 <!--
   Política de API Management (Consumption) para el proxy /gym-coach.
+  Endpoint: Azure AI Foundry (proyecto v1, OpenAI-compatible) con API key DESHABILITADA.
+  Autenticación: Entra ID vía la IDENTIDAD ADMINISTRADA del APIM (sin key secreta).
 
   Hace todo sin código:
    - CORS: permite el origen público de la app (maneja el preflight OPTIONS solo).
-   - Inyecta la api-key de Azure OpenAI desde un Named Value secreto ({{aoai-key}}).
-   - Enruta al deployment del modelo (chat/completions) con su api-version.
+   - Pide un token de Entra ID con la identidad administrada del APIM y lo pone como Bearer.
+   - Enruta a chat/completions del proyecto v1.
    - Limita el abuso por IP (rate-limit-by-key).
 
-  Reemplaza antes de pegar:
-   - TU-RECURSO   -> el nombre de tu recurso Azure OpenAI (host: TU-RECURSO.openai.azure.com)
-   - gpt-4.1-mini -> el nombre EXACTO de tu deployment, si es distinto
-  Y crea el Named Value secreto llamado "aoai-key" con tu KEY 1 de Azure OpenAI.
+  REQUISITOS (ver guía):
+   1. Activa la identidad administrada (system-assigned) del APIM.
+   2. Asígnale un rol RBAC en el recurso de Foundry (ej. "Azure AI User"
+      o "Cognitive Services OpenAI User").
+   3. El body que envía la app debe incluir "model": "gpt-4.1-mini".
+
+  Si la prueba da 401/403:
+   - Cambia el resource a "https://cognitiveservices.azure.com" (ver comentario abajo).
+   - Verifica que el rol RBAC ya se propagó (puede tardar unos minutos).
+   - Ya NO se necesita el Named Value "aoai-key".
 -->
 <policies>
   <inbound>
@@ -31,12 +39,14 @@
     <!-- Tope de abuso: 20 llamadas por minuto por IP del cliente -->
     <rate-limit-by-key calls="20" renewal-period="60" counter-key="@(context.Request.IpAddress)" />
 
-    <!-- Enruta al deployment de Azure OpenAI e inyecta la key -->
-    <set-backend-service base-url="https://TU-RECURSO.openai.azure.com/openai/deployments/gpt-4.1-mini" />
-    <rewrite-uri template="/chat/completions?api-version=2025-01-01-preview" />
-    <set-header name="api-key" exists-action="override">
-      <value>{{aoai-key}}</value>
-    </set-header>
+    <!-- Endpoint de proyecto Foundry (v1, OpenAI-compatible) -->
+    <set-backend-service base-url="https://gymapp.services.ai.azure.com/api/projects/proj-gymapp/openai/v1" />
+    <rewrite-uri template="/chat/completions" />
+
+    <!-- AUTH con Entra ID vía identidad administrada del APIM.
+         Pone automáticamente el header Authorization: Bearer <token>.
+         Si da 401/403, prueba resource="https://cognitiveservices.azure.com" -->
+    <authentication-managed-identity resource="https://ai.azure.com" ignore-error="false" />
   </inbound>
   <backend>
     <base />
