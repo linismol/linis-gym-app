@@ -1,0 +1,50 @@
+<!--
+  Política de API Management (Consumption) para el proxy /gym-coach.
+
+  Hace todo sin código:
+   - CORS: permite el origen público de la app (maneja el preflight OPTIONS solo).
+   - Inyecta la api-key de Azure OpenAI desde un Named Value secreto ({{aoai-key}}).
+   - Enruta al deployment del modelo (chat/completions) con su api-version.
+   - Limita el abuso por IP (rate-limit-by-key).
+
+  Reemplaza antes de pegar:
+   - TU-RECURSO   -> el nombre de tu recurso Azure OpenAI (host: TU-RECURSO.openai.azure.com)
+   - gpt-4.1-mini -> el nombre EXACTO de tu deployment, si es distinto
+  Y crea el Named Value secreto llamado "aoai-key" con tu KEY 1 de Azure OpenAI.
+-->
+<policies>
+  <inbound>
+    <base />
+    <cors allow-credentials="false">
+      <allowed-origins>
+        <origin>https://linismol.github.io</origin>
+      </allowed-origins>
+      <allowed-methods>
+        <method>POST</method>
+        <method>OPTIONS</method>
+      </allowed-methods>
+      <allowed-headers>
+        <header>Content-Type</header>
+      </allowed-headers>
+    </cors>
+
+    <!-- Tope de abuso: 20 llamadas por minuto por IP del cliente -->
+    <rate-limit-by-key calls="20" renewal-period="60" counter-key="@(context.Request.IpAddress)" />
+
+    <!-- Enruta al deployment de Azure OpenAI e inyecta la key -->
+    <set-backend-service base-url="https://TU-RECURSO.openai.azure.com/openai/deployments/gpt-4.1-mini" />
+    <rewrite-uri template="/chat/completions?api-version=2025-01-01-preview" />
+    <set-header name="api-key" exists-action="override">
+      <value>{{aoai-key}}</value>
+    </set-header>
+  </inbound>
+  <backend>
+    <base />
+  </backend>
+  <outbound>
+    <base />
+  </outbound>
+  <on-error>
+    <base />
+  </on-error>
+</policies>
