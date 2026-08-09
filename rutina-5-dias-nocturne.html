@@ -314,9 +314,29 @@ const SECTION_LABELS = [
   { key: "summary", label: "Seguimiento" },
 ];
 
-/* window.claude.complete only exists inside the Claude Artifact runtime. */
-const HAS_CLAUDE = !!(window.claude && typeof window.claude.complete === "function");
-const NO_CLAUDE_MSG = "El análisis y el chat de /gym-coach usan IA que solo corre dentro de la app de Claude (Artifact). Abajo tienes tus datos base de la semana; el resto de la app funciona igual aquí.";
+/* Backend de IA: proxy de Azure API Management -> Azure AI Foundry (gpt-4.1-mini). */
+const COACH_ENDPOINT = "https://linis-apim.azure-api.net/coach/";
+const COACH_MODEL = "gpt-4.1-mini";
+const HAS_CLAUDE = !!COACH_ENDPOINT || !!(window.claude && typeof window.claude.complete === "function");
+const NO_CLAUDE_MSG = "El análisis y el chat de /gym-coach necesitan el backend de IA configurado. Abajo tienes tus datos base de la semana; el resto de la app funciona igual aquí.";
+
+async function coachComplete(prompt){
+  if (COACH_ENDPOINT){
+    const r = await fetch(COACH_ENDPOINT, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        model: COACH_MODEL,
+        messages: [{ role: "user", content: prompt }],
+        max_completion_tokens: 500,
+      }),
+    });
+    if (!r.ok) throw new Error("coach " + r.status);
+    const data = await r.json();
+    return (data.choices && data.choices[0] && data.choices[0].message && data.choices[0].message.content) || "";
+  }
+  return await window.claude.complete(prompt);
+}
 
 /* ==================== State ==================== */
 const state = {
@@ -658,7 +678,7 @@ async function runAnalysis(){
   state.loadingAnalysis = true; state.analysisError = ""; state.analysisFetchedFor = context;
   render();
   try {
-    const text = await window.claude.complete(
+    const text = await coachComplete(
       `Eres /gym-coach, entrenador de fuerza e hipertrofia de Lina, enfocado en volumen de pierna y glúteo. ` +
       `Con este historial de peso registrado esta semana vs. la semana anterior, y el historial de InBody, da un análisis breve (4-6 líneas): qué progresó, qué se estancó, y una recomendación concreta. No apliques cambios, solo recomienda. Responde en texto plano, sin markdown (nada de #, **, -, etc.).\n\n` +
       `Datos de la semana:\n${context}\n\nHistorial InBody:\n${INBODY_SEED.map(r => `${r.date}: peso ${r.peso}kg, MME ${r.mme}kg, PGC ${r.pgc}%`).join("\n")}`
@@ -677,7 +697,7 @@ async function sendChat(){
   state.chatInput = ""; state.chatLoading = true;
   render();
   try {
-    const text = await window.claude.complete(
+    const text = await coachComplete(
       `Eres /gym-coach, entrenador de fuerza e hipertrofia de Lina (glúteo y pierna). Contexto de su semana:\n${summaryTextSnapshot}\n\nPregunta de Lina: ${question}\n\nResponde breve y concreto, sin aplicar cambios a la rutina por tu cuenta. Responde en texto plano, sin markdown (nada de #, **, -, etc.).`
     );
     state.chatMessages = [...state.chatMessages, { role: "assistant", text }]; state.chatLoading = false;
