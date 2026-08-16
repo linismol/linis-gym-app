@@ -882,6 +882,11 @@ function attachSwipe(containerId, trackId, count, getActiveIndex, onCommit, opts
   let startX = 0, startY = 0, dragging = false, locked = null, startIdx = 0;
   const stop = e => { if (opts.stopPropagation) e.stopPropagation(); };
   const onDown = e => {
+    // No iniciar el gesto de swipe si el toque empieza sobre un control nativo
+    // (select, input, botón, link). Si no, al soltar sobre un <select> el pager
+    // igual dispara su slideTo()->render() ~220ms después, reconstruyendo el DOM
+    // mientras el desplegable nativo sigue abierto y cerrándolo/rompiéndolo.
+    if (e.target.closest("select, input, textarea, button, a")) return;
     stop(e);
     startX = e.clientX; startY = e.clientY;
     dragging = true; locked = null;
