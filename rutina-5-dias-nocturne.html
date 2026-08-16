@@ -8,6 +8,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <style>
 /* ===== Nocturne design system — tokens (source of truth: styles.css) ===== */
 :root{
@@ -344,6 +345,69 @@ async function coachComplete(prompt){
     return (data.choices && data.choices[0] && data.choices[0].message && data.choices[0].message.content) || "";
   }
   return await window.claude.complete(prompt);
+}
+
+/* Almacenamiento persistente: Supabase (Postgres + RLS, sin proxy — la anon/publishable
+   key está pensada para ir en el cliente). Si falla o no está disponible, la app sigue
+   funcionando solo en memoria (mismo patrón de resiliencia que el backend de IA). */
+const SUPABASE_URL = "https://rlniezpigvizvnnkxenz.supabase.co";
+const SUPABASE_KEY = "sb_publishable_XMqzCRt-OpO68iBNH0HiDw_nq1Y2KS_";
+const supa = (window.supabase && SUPABASE_URL && SUPABASE_KEY)
+  ? window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY)
+  : null;
+
+const isoToDMY = iso => iso.split("-").reverse().join(".");
+const dmyToIso = dmy => dmy.split(".").reverse().join("-");
+
+async function loadRemoteState(){
+  if (!supa) return;
+  try {
+    const [{ data: stateRows, error: e1 }, { data: inbodyRows, error: e2 }] = await Promise.all([
+      supa.from("app_state").select("*").eq("id", 1).limit(1),
+      supa.from("inbody_measurements").select("*").order("measured_on", { ascending: true }),
+    ]);
+    if (!e1 && stateRows && stateRows[0]){
+      const row = stateRows[0];
+      state.weights = row.weights || {};
+      state.reps = row.reps || {};
+      state.rir = row.rir || {};
+      state.completed = row.completed || {};
+      state.chartExerciseKey = row.chart_exercise_key || state.chartExerciseKey;
+    }
+    if (!e2 && inbodyRows && inbodyRows.length){
+      state.inbody = inbodyRows.map(r => ({
+        date: isoToDMY(r.measured_on),
+        peso: Number(r.peso), mme: Number(r.mme), pgc: Number(r.pgc),
+        cadera: Number(r.cadera), puntuacion: Number(r.puntuacion),
+      }));
+    }
+    render();
+  } catch (e) {
+    console.warn("No se pudo cargar el progreso guardado en Supabase; usando estado local.", e);
+  }
+}
+
+let persistTimer = null;
+function schedulePersist(){
+  if (!supa) return;
+  clearTimeout(persistTimer);
+  persistTimer = setTimeout(persistAppState, 800);
+}
+async function persistAppState(){
+  if (!supa) return;
+  try {
+    await supa.from("app_state").upsert({
+      id: 1,
+      weights: state.weights,
+      reps: state.reps,
+      rir: state.rir,
+      completed: state.completed,
+      chart_exercise_key: state.chartExerciseKey,
+      updated_at: new Date().toISOString(),
+    });
+  } catch (e) {
+    console.warn("No se pudo guardar el progreso en Supabase.", e);
+  }
 }
 
 /* ==================== Progreso sintético (últimas 4 semanas) ====================
@@ -959,7 +1023,7 @@ root.addEventListener("click", (e) => {
   } else if (a === "toggleOpen"){
     const k = el.getAttribute("data-key"); state.open[k] = !state.open[k]; render();
   } else if (a === "toggleComplete"){
-    const k = el.getAttribute("data-key"); state.completed[k] = !state.completed[k]; render();
+    const k = el.getAttribute("data-key"); state.completed[k] = !state.completed[k]; render(); schedulePersist();
   } else if (a === "toggleAlt"){
     const k = el.getAttribute("data-key"); state.altOpen[k] = !state.altOpen[k]; render();
   } else if (a === "adjWeight"){
@@ -973,7 +1037,7 @@ root.addEventListener("click", (e) => {
     state.weights[wk] = String(next);
     const filled = prefix => Array.from({ length: setCount }, (_, i) => state.weights[`${prefix}${i}`]).every(v => v);
     if (filled(`${exkey}-`) || filled(`${exkey}-alt-`)) state.completed[exkey] = true;
-    render();
+    render(); schedulePersist();
   } else if (a === "adjReps"){
     const wk = el.getAttribute("data-wk");
     const delta = parseInt(el.getAttribute("data-delta"), 10);
@@ -981,7 +1045,7 @@ root.addEventListener("click", (e) => {
     const current = parseInt(state.reps[wk] ?? fallback, 10) || 0;
     const next = Math.max(0, current + delta);
     state.reps[wk] = String(next);
-    render();
+    render(); schedulePersist();
   } else if (a === "saveInbody"){
     saveInbody();
   } else if (a === "refreshAnalysis"){
@@ -996,7 +1060,7 @@ root.addEventListener("input", (e) => {
   const el = e.target.closest("[data-action]");
   if (!el) return;
   const a = el.getAttribute("data-action");
-  if (a === "setRir") state.rir[el.getAttribute("data-rirkey")] = el.value;
+  if (a === "setRir"){ state.rir[el.getAttribute("data-rirkey")] = el.value; schedulePersist(); }
   else if (a === "setInbody"){ state.newInbody[el.getAttribute("data-field")] = el.value; state.newInbody.error = ""; }
   else if (a === "setChat") state.chatInput = el.value;
 });
@@ -1005,20 +1069,32 @@ root.addEventListener("change", (e) => {
   const el = e.target.closest("[data-action='setChartExercise']");
   if (!el) return;
   state.chartExerciseKey = el.value;
-  render();
+  render(); schedulePersist();
 });
 
-function saveInbody(){
+async function saveInbody(){
   const f = state.newInbody;
   if (!f.date || !f.peso || !f.mme || !f.pgc || !f.cadera || !f.puntuacion){
     state.newInbody.error = "Completa los 6 campos antes de guardar."; render(); return;
   }
-  state.inbody.push({ date: f.date, peso: parseFloat(f.peso), mme: parseFloat(f.mme), pgc: parseFloat(f.pgc), cadera: parseFloat(f.cadera), puntuacion: parseFloat(f.puntuacion) });
+  const row = { date: f.date, peso: parseFloat(f.peso), mme: parseFloat(f.mme), pgc: parseFloat(f.pgc), cadera: parseFloat(f.cadera), puntuacion: parseFloat(f.puntuacion) };
+  state.inbody.push(row);
   state.newInbody = { date: "", peso: "", mme: "", pgc: "", cadera: "", puntuacion: "", error: "" };
   render();
+  if (supa){
+    try {
+      await supa.from("inbody_measurements").insert({
+        measured_on: dmyToIso(row.date),
+        peso: row.peso, mme: row.mme, pgc: row.pgc, cadera: row.cadera, puntuacion: row.puntuacion,
+      });
+    } catch (e) {
+      console.warn("No se pudo guardar la medición InBody en Supabase.", e);
+    }
+  }
 }
 
 render();
+loadRemoteState();
 </script>
 </body>
 </html>
