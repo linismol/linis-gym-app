@@ -60,6 +60,8 @@ a:hover{color:var(--color-accent-300);}
 .btn-secondary{border-color:var(--color-divider);}
 .btn-secondary:hover{background:color-mix(in srgb, var(--color-text) 7%, transparent);}
 .btn-secondary:active{background:color-mix(in srgb, var(--color-text) 14%, transparent);}
+.btn-icon{width:36px;height:36px;padding:0;}
+.btn-icon:active{transform:scale(0.94);}
 
 /* forms */
 .field>label{display:block;font-size:12px;margin-bottom:5px;color:color-mix(in srgb, var(--color-text) 70%, transparent);}
@@ -67,6 +69,7 @@ a:hover{color:var(--color-accent-300);}
 .input::placeholder{color:var(--color-neutral-500);}
 .input:hover{border-color:color-mix(in srgb, var(--color-text) 45%, transparent);}
 .input:focus-visible{border-color:var(--color-accent);outline-offset:0;}
+select.input{appearance:none;-webkit-appearance:none;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6'%3E%3Cpath d='M1 1l4 4 4-4' stroke='%239397ab' stroke-width='1.5' fill='none'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 10px center;padding-right:28px;}
 
 /* cards */
 .card{display:flex;flex-direction:column;gap:var(--space-2);padding:var(--space-3);border-radius:var(--radius-md);background:var(--color-surface);}
@@ -86,14 +89,18 @@ a:hover{color:var(--color-accent-300);}
 .chk{width:18px;height:18px;border-radius:5px;border:1.5px solid var(--color-divider);flex:none;display:flex;align-items:center;justify-content:center;cursor:pointer;font-size:12px;color:var(--color-bg);}
 .chk.done{background:var(--color-accent);border-color:var(--color-accent);}
 
-.app{max-width:480px;margin:0 auto;min-height:100vh;background:var(--color-bg);color:var(--color-text);box-shadow:var(--shadow-lg);}
+.app{max-width:480px;margin:0 auto;min-height:100vh;background:var(--color-bg);color:var(--color-text);box-shadow:var(--shadow-lg);overflow:hidden;}
 .hdr{position:sticky;top:0;z-index:20;background:var(--color-bg);border-bottom:1px solid var(--color-divider);padding-top:env(safe-area-inset-top,0px);}
 .hdr-top{padding:16px 20px 4px;}
 .eyebrow{font-size:11px;letter-spacing:0.08em;text-transform:uppercase;color:var(--color-accent);}
-.tabrow{display:flex;overflow-x:auto;padding:8px 12px 0;gap:2px;scrollbar-width:none;}
+.tabrow{display:flex;overflow-x:auto;overflow-y:hidden;padding:8px 12px 0;gap:2px;scrollbar-width:none;}
 .tabrow::-webkit-scrollbar{display:none;}
 .tabrow.days{padding:6px 12px 0;border-top:1px solid var(--color-divider);}
 .muted{color:var(--color-neutral-500);}
+
+/* swipeable pager (sections + days) */
+.pager{touch-action:pan-y;overflow:hidden;position:relative;cursor:grab;}
+.pager-track{position:relative;width:100%;}
 </style>
 </head>
 <body>
@@ -122,6 +129,7 @@ const DAYS = [
     exercises: [
       { name: "Hip Thrust en Booty Builder (Panatta)", setCount: 4, repsLabel: "8-10 (B-stance)", category: "Activator", tone: "pink",
         prevWeights: [60, 70, 70, 80], photo: PH.bootyBuilder,
+        weekMaxes: [150, 120, 180, 180], weekReps: 12,
         tempoNote: "Pausa de 2 segundos en el pico de contracción de cada rep. Sube la carga si las últimas 2 reps no cuestan.",
         kneeNote: null,
         explanation: "Activator del día: carga pesada en la posición acortada del glúteo, en B-stance para corregir el lado que se queda atrás. Sube la carga frente a la semana pasada.",
@@ -271,7 +279,7 @@ const DAYS = [
         explanation: "Técnica validada contigo: redondear la espalda baja y abrir los pies a 45° traslada el énfasis del lumbar al glúteo.",
         hasAlt: true, altName: "Hip hinge con banda a nivel de rodillas (isométrico)", altPhoto: PH.gym, altExplanation: "Mismo patrón de bisagra con tensión constante de banda — sirve si el banco de back extension está ocupado." },
       { name: "Hip Thrust con banda a nivel de rodillas", setCount: 3, repsLabel: "15 (pausa isométrica)", category: "Pumper", tone: "yellow",
-        noWeight: true, photo: PH.gym,
+        bodyweight: true, prevWeights: [0, 0, 0], photo: PH.gym,
         tempoNote: "Banda tensando hacia afuera en cada rep, pausa de 2 segundos arriba empujando las rodillas contra la banda.",
         kneeNote: null,
         explanation: "Pumper con énfasis en abducción isométrica — sin carga externa, todo el trabajo lo hace la tensión de la banda contra las rodillas.",
@@ -338,14 +346,55 @@ async function coachComplete(prompt){
   return await window.claude.complete(prompt);
 }
 
+/* ==================== Progreso sintético (últimas 4 semanas) ====================
+   Hasta que exista un backend con historial real por sesión, la mini-gráfica y la
+   gráfica de Seguimiento se calculan a partir del último dato conocido (weekMaxes
+   curado, o prevWeights como aproximación). Queda explícito en la UI que son datos
+   de ejemplo. */
+const REP_VARIATION = [0.85, 1.1, 0.95, 1];
+function synthTrend(ex){
+  if (ex.weekMaxes){
+    const baseReps = ex.weekReps || parseInt((ex.repsLabel.match(/\d+/) || ["10"])[0], 10);
+    const setsPerWeek = [ex.setCount - 1, ex.setCount + 1, ex.setCount, ex.setCount];
+    const volumes = ex.weekMaxes.map((m, i) => Math.round(m * Math.round(baseReps * REP_VARIATION[i]) * setsPerWeek[i]));
+    return { maxes: ex.weekMaxes, volumes };
+  }
+  const maxW = Math.max(...ex.prevWeights);
+  const repsTarget = parseInt((ex.repsLabel.match(/\d+/) || ["10"])[0], 10);
+  const factors = [0.88, 0.92, 0.96, 1];
+  const maxes = factors.map(f => Math.round((maxW * f) / 1.25) * 1.25);
+  const volumes = maxes.map((m, i) => Math.round(m * Math.round(repsTarget * REP_VARIATION[i]) * ex.setCount));
+  return { maxes, volumes };
+}
+function flattenExercises(){
+  return DAYS.flatMap((d, di) => d.exercises
+    .filter(ex => !!ex.prevWeights && !ex.bodyweight)
+    .map((ex, ei) => ({ key: `${di}-${ei}`, label: `${d.label.split(" · ")[1]} · ${ex.name}` })));
+}
+function buildChartPoints(ex, w, h, pad){
+  const trend = synthTrend(ex);
+  const scale = arr => { const mn = Math.min(...arr), mx = Math.max(...arr); return arr.map(v => mx === mn ? h / 2 : h - pad - ((v - mn) / (mx - mn)) * (h - pad * 2)); };
+  const xs = trend.maxes.map((_, i) => pad + (i * (w - pad * 2)) / (trend.maxes.length - 1));
+  const maxYs = scale(trend.maxes), volYs = scale(trend.volumes);
+  const toPoints = ys => xs.map((x, i) => `${x.toFixed(1)},${ys[i].toFixed(1)}`).join(" ");
+  return {
+    viewBox: `0 0 ${w} ${h}`,
+    maxPoints: toPoints(maxYs),
+    volPoints: toPoints(volYs),
+    currentMax: trend.maxes[trend.maxes.length - 1],
+    currentVolume: trend.volumes[trend.volumes.length - 1],
+  };
+}
+
 /* ==================== State ==================== */
 const state = {
   view: "routine", activeDay: 0,
-  open: {}, altOpen: {}, completed: {}, weights: {},
+  open: {}, altOpen: {}, completed: {}, weights: {}, reps: {}, rir: {},
   inbody: INBODY_SEED.map(r => ({ ...r })),
   newInbody: { date: "", peso: "", mme: "", pgc: "", cadera: "", puntuacion: "", error: "" },
   analysisText: "", analysisError: "", loadingAnalysis: false, analysisFetchedFor: null,
   chatMessages: [], chatInput: "", chatLoading: false,
+  chartExerciseKey: "0-0",
 };
 let summaryTextSnapshot = "";
 
@@ -359,12 +408,12 @@ function headerHTML(){
   const headerTitle = v === "routine" ? DAYS[state.activeDay].label
     : v === "inbody" ? "Historial InBody"
     : v === "checkup" ? "Chequeo de progreso" : "Seguimiento";
-  const sections = SECTION_LABELS.map(s =>
-    `<button class="daytab ${v === s.key ? "active" : ""}" data-action="setView" data-view="${s.key}">${esc(s.label)}</button>`
+  const sections = SECTION_LABELS.map((s, i) =>
+    `<button class="daytab ${v === s.key ? "active" : ""}" data-action="goSection" data-idx="${i}">${esc(s.label)}</button>`
   ).join("");
   const days = v === "routine"
     ? `<div class="tabrow days">${DAYS.map((d, i) =>
-        `<button class="daytab ${i === state.activeDay ? "active" : ""}" style="font-size:12px;" data-action="setDay" data-day="${i}">${esc(d.label)}</button>`
+        `<button class="daytab ${i === state.activeDay ? "active" : ""}" style="font-size:12px;" data-action="goDay" data-idx="${i}">${esc(d.label)}</button>`
       ).join("")}</div>`
     : "";
   return `
@@ -378,27 +427,74 @@ function headerHTML(){
     </div>`;
 }
 
-function setsRowsHTML(ex, key, alt){
+function stepperBtn(action, extra, label){
+  return `<button class="btn btn-icon" style="width:22px;height:22px;padding:0;font-size:13px;flex:none;line-height:1;background:var(--color-neutral-800);border:1px solid var(--color-divider);border-radius:var(--radius-sm);color:var(--color-text);" data-action="${action}" ${extra}>${label}</button>`;
+}
+
+function setsRowsHTML(ex, key, alt, isMainBodyweight){
   const prev = alt ? (ex.altPrevWeights || ex.prevWeights) : ex.prevWeights;
   const kind = alt ? "alt-" : "";
+  const isBW = alt ? (ex.altBodyweight ?? isMainBodyweight) : isMainBodyweight;
+  const step = isBW ? 1 : 2.5;
+  const repsTarget = (ex.repsLabel.match(/\d+/) || ["10"])[0];
   return prev.map((pw, si) => {
     const wk = `${key}-${kind}${si}`;
     const val = state.weights[wk] ?? "";
-    return `<div style="display:flex;align-items:center;gap:10px;">
-        <div style="width:16px;flex:none;font-size:12px;" class="muted">${si + 1}</div>
-        <div style="width:64px;flex:none;font-size:11px;" class="muted">${esc(pw)} kg ant.</div>
-        <input class="input" style="flex:1;" inputmode="decimal" placeholder="${esc(pw)}" value="${esc(val)}" data-action="setWeight" data-wk="${wk}" data-exkey="${key}" data-setcount="${ex.setCount}">
-        <div style="width:22px;flex:none;font-size:11px;" class="muted">kg</div>
+    const displayValue = val || (isBW ? "BW" : String(pw));
+    const prevLabel = isBW ? "peso corporal" : `${pw} kg ant.`;
+    const repsVal = state.reps[wk] ?? "";
+    const repsDisplay = repsVal || String(repsTarget);
+    const weightAttrs = `data-wk="${wk}" data-exkey="${key}" data-setcount="${ex.setCount}" data-fallback="${pw}"`;
+    const repsAttrs = `data-wk="${wk}" data-fallback="${repsTarget}"`;
+    return `<div style="display:flex;align-items:center;gap:4px;">
+        <div style="width:12px;flex:none;font-size:12px;color:var(--color-neutral-500);">${si + 1}</div>
+        <div style="width:38px;flex:none;font-size:9px;color:var(--color-neutral-500);line-height:1.3;">${esc(prevLabel)}</div>
+        <div style="flex:1.3;min-width:0;display:flex;align-items:center;gap:3px;">
+          ${stepperBtn("adjWeight", `${weightAttrs} data-delta="${-step}"`, "−")}
+          <div style="flex:1;text-align:center;font-size:12px;color:var(--color-text);">${esc(displayValue)}</div>
+          ${stepperBtn("adjWeight", `${weightAttrs} data-delta="${step}"`, "+")}
+        </div>
+        <div style="width:14px;flex:none;font-size:9px;color:var(--color-neutral-500);">kg</div>
+        <div style="flex:1;min-width:0;display:flex;align-items:center;gap:3px;">
+          ${stepperBtn("adjReps", `${repsAttrs} data-delta="-1"`, "−")}
+          <div style="flex:1;text-align:center;font-size:12px;color:var(--color-text);">${esc(repsDisplay)}</div>
+          ${stepperBtn("adjReps", `${repsAttrs} data-delta="1"`, "+")}
+        </div>
+        <div style="width:20px;flex:none;font-size:9px;color:var(--color-neutral-500);">rep</div>
       </div>`;
   }).join("");
 }
 
-function exerciseHTML(ex, i){
-  const key = state.activeDay + "-" + i;
+function rirBlockHTML(rirKey){
+  const val = state.rir[rirKey] ?? "";
+  return `<div style="display:flex;align-items:center;gap:8px;margin-top:10px;padding-top:10px;border-top:1px solid var(--color-divider);">
+      <div style="font-size:11px;color:var(--color-neutral-500);flex:1;">RIR real (al terminar la última serie)</div>
+      <input class="input" style="width:56px;flex:none;text-align:center;" placeholder="RIR" value="${esc(val)}" data-action="setRir" data-rirkey="${rirKey}">
+    </div>`;
+}
+
+function miniChartHTML(ex){
+  const c = buildChartPoints(ex, 240, 70, 6);
+  return `<div style="margin-top:14px;padding:12px;background:var(--color-neutral-900);border-radius:var(--radius-md);">
+      <div style="font-size:10px;letter-spacing:0.08em;text-transform:uppercase;color:var(--color-neutral-500);margin-bottom:6px;">Progreso · últimas 4 semanas (datos de ejemplo)</div>
+      <svg viewBox="${c.viewBox}" style="width:100%;height:70px;overflow:visible;">
+        <polyline points="${c.volPoints}" fill="none" stroke="var(--color-accent)" stroke-width="2"></polyline>
+        <polyline points="${c.maxPoints}" fill="none" stroke="var(--color-neutral-300)" stroke-width="2"></polyline>
+      </svg>
+      <div style="display:flex;gap:14px;margin-top:8px;font-size:10px;color:var(--color-neutral-500);">
+        <div style="display:flex;align-items:center;gap:5px;"><span style="width:8px;height:2px;background:var(--color-accent);display:inline-block;"></span>Volumen (hoy: ${c.currentVolume})</div>
+        <div style="display:flex;align-items:center;gap:5px;"><span style="width:8px;height:2px;background:var(--color-neutral-300);display:inline-block;"></span>Peso máx (hoy: ${c.currentMax} kg)</div>
+      </div>
+    </div>`;
+}
+
+function exerciseHTML(ex, i, dayIndex){
+  const key = dayIndex + "-" + i;
   const isOpen = !!state.open[key];
   const altOpen = !!state.altOpen[key];
   const completed = !!state.completed[key];
-  const hasSets = !ex.noWeight;
+  const hasSets = !!ex.prevWeights;
+  const isBodyweight = !!ex.bodyweight;
   const setsReps = ex.setCount + " x " + ex.repsLabel;
   const tone = TONE_MAP[ex.tone] || "neutral";
 
@@ -412,15 +508,19 @@ function exerciseHTML(ex, i){
 
     const weightsBlock = hasSets ? `<div style="margin-top:14px;">
         <div style="font-size:11px;letter-spacing:0.08em;text-transform:uppercase;margin-bottom:8px;" class="muted">Registrar peso</div>
-        <div style="display:flex;flex-direction:column;gap:8px;">${setsRowsHTML(ex, key, false)}</div>
+        <div style="display:flex;flex-direction:column;gap:8px;">${setsRowsHTML(ex, key, false, isBodyweight)}</div>
+        ${rirBlockHTML(key)}
       </div>` : "";
+
+    const miniChart = (hasSets && !isBodyweight) ? miniChartHTML(ex) : "";
 
     let altBlock = "";
     if (altOpen){
       if (ex.hasAlt){
         const altWeights = hasSets ? `<div style="margin-top:14px;">
             <div style="font-size:11px;letter-spacing:0.08em;text-transform:uppercase;margin-bottom:8px;" class="muted">Registrar peso · usaste la alternativa</div>
-            <div style="display:flex;flex-direction:column;gap:8px;">${setsRowsHTML(ex, key, true)}</div>
+            <div style="display:flex;flex-direction:column;gap:8px;">${setsRowsHTML(ex, key, true, isBodyweight)}</div>
+            ${rirBlockHTML(key + "-alt")}
           </div>` : "";
         altBlock = `<div style="margin-top:14px;padding:14px;background:var(--color-neutral-900);border-radius:var(--radius-md);">
             <div style="font-size:11px;letter-spacing:0.08em;text-transform:uppercase;margin-bottom:8px;" class="muted">Alternativa · máquina ocupada</div>
@@ -448,6 +548,7 @@ function exerciseHTML(ex, i){
         <div style="margin-top:12px;font-size:11px;letter-spacing:0.08em;text-transform:uppercase;" class="muted">Técnica</div>
         <div style="margin-top:4px;font-size:13px;opacity:0.9;line-height:1.55;">${esc(ex.explanation)}</div>
         ${weightsBlock}
+        ${miniChart}
         <div style="margin-top:14px;">
           <button class="btn btn-secondary" data-action="toggleAlt" data-key="${key}">${altOpen ? "Ocultar alternativa" : "Ver alternativa"}</button>
         </div>
@@ -471,8 +572,7 @@ function exerciseHTML(ex, i){
     </div>`;
 }
 
-function routineBodyHTML(){
-  const day = DAYS[state.activeDay];
+function dayPanelHTML(day, dayIndex){
   const knee = day.knee
     ? `<div style="margin:10px 20px 0;padding:10px 14px;background:var(--color-accent-900);border:1px solid var(--color-accent-800);border-radius:var(--radius-md);font-size:12px;color:var(--color-accent-200);line-height:1.5;">Recordatorio fijo: rango controlado en ejercicios de rodilla marcados abajo — nunca profundidad completa. Sin ejercicios de pecho ni pantorrilla.</div>` : "";
   const tags = day.tags
@@ -481,13 +581,23 @@ function routineBodyHTML(){
         <span class="tag tag-accent-2">🟠 Stretcher = carga en elongación</span>
         <span class="tag tag-neutral">🟡 Pumper = alto rango, bombeo</span>
       </div>` : "";
-  const list = day.exercises.map((ex, i) => exerciseHTML(ex, i)).join("");
+  const list = day.exercises.map((ex, i) => exerciseHTML(ex, i, dayIndex)).join("");
   return `
     <div style="padding:14px 20px 4px;font-size:13px;opacity:0.75;line-height:1.5;">${esc(day.focusNote)}</div>
     ${knee}
     ${tags}
     <div style="padding:16px 20px 40px;display:flex;flex-direction:column;gap:12px;">${list}</div>
     <div style="padding:0 20px 32px;text-align:center;font-size:11px;color:var(--color-neutral-600);">Fotos de máquina: reemplázalas cuando tengas las tuyas. Video: enlace de búsqueda mientras no hay grabación propia.</div>`;
+}
+
+function routinePanelHTML(){
+  const activeIdx = state.activeDay;
+  const panelsHtml = DAYS.map((d, i) => `
+      <div style="position:${i === activeIdx ? "relative" : "absolute"};top:0;left:${i * 100}%;width:100%;box-sizing:border-box;">${dayPanelHTML(d, i)}</div>`
+  ).join("");
+  return `<div id="day-swipe" class="pager">
+      <div id="day-track" class="pager-track" style="transform:translateX(-${activeIdx * 100}%);">${panelsHtml}</div>
+    </div>`;
 }
 
 function inbodyBodyHTML(){
@@ -575,15 +685,51 @@ function checkupBodyHTML(){
     </div>`;
 }
 
+function summaryChartHTML(){
+  const options = flattenExercises();
+  const validKey = options.some(o => o.key === state.chartExerciseKey) ? state.chartExerciseKey : (options[0] ? options[0].key : "0-0");
+  const [di, ei] = validKey.split("-").map(Number);
+  const ex = DAYS[di].exercises[ei];
+  const c = buildChartPoints(ex, 280, 90, 6);
+  const weekLabels = ["S-3", "S-2", "S-1", "Hoy"];
+  return `<div style="padding:14px 20px 8px;">
+      <div class="card elev-sm">
+        <div class="card-kicker">Gráfica de progreso · últimas 4 semanas</div>
+        <select class="input" style="margin-top:10px;width:100%;" data-action="setChartExercise">
+          ${options.map(o => `<option value="${o.key}" ${o.key === validKey ? "selected" : ""}>${esc(o.label)}</option>`).join("")}
+        </select>
+        <svg viewBox="${c.viewBox}" style="width:100%;height:120px;margin-top:12px;overflow:visible;">
+          <polyline points="${c.volPoints}" fill="none" stroke="var(--color-accent)" stroke-width="2"></polyline>
+          <polyline points="${c.maxPoints}" fill="none" stroke="var(--color-neutral-300)" stroke-width="2"></polyline>
+        </svg>
+        <div style="display:flex;justify-content:space-between;margin-top:4px;">
+          ${weekLabels.map(wl => `<div style="font-size:10px;color:var(--color-neutral-500);">${wl}</div>`).join("")}
+        </div>
+        <div style="display:flex;gap:16px;margin-top:12px;font-size:11px;color:var(--color-neutral-500);">
+          <div style="display:flex;align-items:center;gap:6px;"><span style="width:10px;height:2px;background:var(--color-accent);display:inline-block;"></span>Volumen total (hoy: ${c.currentVolume})</div>
+          <div style="display:flex;align-items:center;gap:6px;"><span style="width:10px;height:2px;background:var(--color-neutral-300);display:inline-block;"></span>Peso máximo (hoy: ${c.currentMax} kg)</div>
+        </div>
+      </div>
+    </div>`;
+}
+
 function summaryBodyHTML(){
+  const metric = (w, r, rirv) => w ? `${w} kg${r ? " x " + r + " reps" : ""}${rirv ? " · RIR " + rirv : ""}` : null;
   const summaryDays = DAYS.map((d, di) => ({
     label: d.label,
-    exercises: d.exercises.filter(ex => !ex.noWeight).flatMap((ex, ei) => {
+    exercises: d.exercises.filter(ex => !!ex.prevWeights).flatMap((ex, ei) => {
       const key = `${di}-${ei}-0`, altKey = `${di}-${ei}-alt-0`;
+      const exerciseKey = `${di}-${ei}`;
       const thisWeek = state.weights[key], lastWeek = ex.prevWeights[0];
-      const rows = [{ name: ex.name, compareLabel: thisWeek ? `${thisWeek} kg (ant. ${lastWeek} kg)` : `sin registrar (ant. ${lastWeek} kg)` }];
+      const thisReps = state.reps[key], thisRir = state.rir[exerciseKey];
+      const m = metric(thisWeek, thisReps, thisRir);
+      const rows = [{ name: ex.name, compareLabel: m ? `${m} (ant. ${lastWeek} kg)` : `sin registrar (ant. ${lastWeek} kg)` }];
       const altThisWeek = state.weights[altKey];
-      if (altThisWeek) rows.push({ name: `↳ ${ex.altName} (alternativa)`, compareLabel: `${altThisWeek} kg (ant. ${(ex.altPrevWeights || ex.prevWeights)[0]} kg)` });
+      if (altThisWeek) {
+        const altReps = state.reps[altKey], altRir = state.rir[`${exerciseKey}-alt`];
+        const altLastWeek = (ex.altPrevWeights || ex.prevWeights)[0];
+        rows.push({ name: `↳ ${ex.altName} (alternativa)`, compareLabel: `${metric(altThisWeek, altReps, altRir)} (ant. ${altLastWeek} kg)` });
+      }
       return rows;
     }),
   }));
@@ -612,7 +758,7 @@ function summaryBodyHTML(){
 
   const analysisDisabled = HAS_CLAUDE ? "" : "disabled";
   return `
-    <div style="margin:16px 20px 0;padding:10px 14px;background:var(--color-accent-900);border:1px solid var(--color-accent-800);border-radius:var(--radius-md);font-size:12px;color:var(--color-accent-200);line-height:1.5;">Recordatorio semanal: tu análisis de /gym-coach usa tu historial de peso/reps e InBody como contexto.</div>
+    <div style="margin:16px 20px 0;padding:10px 14px;background:var(--color-accent-900);border:1px solid var(--color-accent-800);border-radius:var(--radius-md);font-size:12px;color:var(--color-accent-200);line-height:1.5;">Recordatorio semanal: tu análisis de /gym-coach ya está listo. Tu historial de peso/reps e InBody se envía al modelo para generarlo — sigue siendo uso personal, sin login.</div>
     <div style="padding:14px 20px 8px;">
       <div class="card elev-sm">
         <div class="card-kicker">Análisis de /gym-coach · esta semana</div>
@@ -633,33 +779,116 @@ function summaryBodyHTML(){
         </div>
       </div>
     </div>
-    <div style="padding:14px 20px 40px;display:flex;flex-direction:column;gap:12px;">
+    ${summaryChartHTML()}
+    <div style="padding:0 20px 40px;display:flex;flex-direction:column;gap:12px;">
       <div style="font-size:11px;letter-spacing:0.08em;text-transform:uppercase;" class="muted">Datos base de esta semana</div>
       ${daysData}
     </div>`;
 }
 
+/* ==================== Pager (swipeable: 4 secciones, y 5 días dentro de Rutina) ==================== */
+function sectionsPagerHTML(){
+  const order = SECTION_LABELS.map(s => s.key);
+  const activeIdx = order.indexOf(state.view);
+  const builders = [routinePanelHTML, inbodyBodyHTML, checkupBodyHTML, summaryBodyHTML];
+  const panelsHtml = builders.map((fn, i) => `
+      <div style="position:${i === activeIdx ? "relative" : "absolute"};top:0;left:${i * 100}%;width:100%;box-sizing:border-box;">${fn()}</div>`
+  ).join("");
+  return `<div id="section-swipe" class="pager">
+      <div id="section-track" class="pager-track" style="transform:translateX(-${activeIdx * 100}%);">${panelsHtml}</div>
+    </div>`;
+}
+
+function slideTo(track, idx, done){
+  if (!track){ done(); return; }
+  track.style.transition = "transform 220ms ease-out";
+  track.style.transform = `translateX(-${idx * 100}%)`;
+  setTimeout(done, 220);
+}
+
+function attachSwipe(containerId, trackId, count, getActiveIndex, onCommit, opts){
+  opts = opts || {};
+  const container = document.getElementById(containerId);
+  const track = document.getElementById(trackId);
+  if (!container || !track) return;
+  let startX = 0, startY = 0, dragging = false, locked = null, startIdx = 0;
+  const stop = e => { if (opts.stopPropagation) e.stopPropagation(); };
+  const onDown = e => {
+    stop(e);
+    startX = e.clientX; startY = e.clientY;
+    dragging = true; locked = null;
+    startIdx = getActiveIndex();
+    track.style.transition = "none";
+  };
+  const onMove = e => {
+    if (!dragging) return;
+    stop(e);
+    const dx = e.clientX - startX, dy = e.clientY - startY;
+    if (!locked){
+      if (Math.abs(dx) < 6 && Math.abs(dy) < 6) return;
+      locked = Math.abs(dx) > Math.abs(dy) ? "x" : "y";
+      if (locked === "y"){ dragging = false; return; }
+    }
+    if (locked === "x"){
+      track.style.transform = `translateX(calc(-${startIdx * 100}% + ${dx}px))`;
+      e.preventDefault();
+    }
+  };
+  const onUp = e => {
+    if (!dragging) return;
+    stop(e);
+    dragging = false;
+    const dx = e.clientX - startX;
+    const w = container.offsetWidth || 1;
+    let newIdx = startIdx;
+    if (locked === "x" && Math.abs(dx) > Math.min(80, w * 0.18)){
+      newIdx = startIdx + (dx < 0 ? 1 : -1);
+    }
+    newIdx = Math.min(count - 1, Math.max(0, newIdx));
+    slideTo(track, newIdx, () => onCommit(newIdx));
+  };
+  container.addEventListener("pointerdown", onDown);
+  container.addEventListener("pointermove", onMove, { passive: false });
+  container.addEventListener("pointerup", onUp);
+  container.addEventListener("pointercancel", onUp);
+  container.addEventListener("pointerleave", onUp);
+}
+
+function attachSwipeHandlers(){
+  attachSwipe("section-swipe", "section-track", SECTION_LABELS.length,
+    () => SECTION_LABELS.findIndex(s => s.key === state.view),
+    (idx) => {
+      state.view = SECTION_LABELS[idx].key;
+      render();
+      if (state.view === "summary" && state.analysisFetchedFor !== buildSummarySnapshot()) runAnalysis();
+    });
+  attachSwipe("day-swipe", "day-track", DAYS.length,
+    () => state.activeDay,
+    (idx) => {
+      if (idx !== state.activeDay){ state.activeDay = idx; state.open = {}; state.altOpen = {}; }
+      render();
+    },
+    { stopPropagation: true });
+}
+
 /* ==================== Render ==================== */
 function render(){
   const scrollY = window.scrollY;
-  let body;
-  switch (state.view){
-    case "inbody": body = inbodyBodyHTML(); break;
-    case "checkup": body = checkupBodyHTML(); break;
-    case "summary": body = summaryBodyHTML(); break;
-    default: body = routineBodyHTML();
-  }
-  root.innerHTML = headerHTML() + body;
+  root.innerHTML = headerHTML() + sectionsPagerHTML();
+  attachSwipeHandlers();
   window.scrollTo(0, scrollY);
 }
 
-/* ==================== AI (window.claude.complete) ==================== */
+/* ==================== AI (window.claude.complete o proxy APIM) ==================== */
 function buildSummarySnapshot(){
   const txt = DAYS.map((d, di) => {
-    const lines = d.exercises.filter(ex => !ex.noWeight).map((ex, ei) => {
-      const key = `${di}-${ei}-0`;
-      const tw = state.weights[key];
-      return `  ${ex.name}: ${tw ? `${tw} kg (ant. ${ex.prevWeights[0]} kg)` : `sin registrar (ant. ${ex.prevWeights[0]} kg)`}`;
+    const lines = d.exercises.filter(ex => !!ex.prevWeights).map((ex, ei) => {
+      const key = `${di}-${ei}-0`, exerciseKey = `${di}-${ei}`;
+      const tw = state.weights[key], tr = state.reps[key], rirv = state.rir[exerciseKey];
+      const detail = tw
+        ? `${tw} kg${tr ? " x " + tr + " reps" : ""}${rirv ? " · RIR real " + rirv : ""} (ant. ${ex.prevWeights[0]} kg)`
+        : `sin registrar (ant. ${ex.prevWeights[0]} kg)`;
+      return `  ${ex.name}: ${detail}`;
     });
     return `${d.label}\n${lines.join("\n")}`;
   }).join("\n\n");
@@ -680,7 +909,7 @@ async function runAnalysis(){
   try {
     const text = await coachComplete(
       `Eres /gym-coach, entrenador de fuerza e hipertrofia de Lina, enfocado en volumen de pierna y glúteo. ` +
-      `Con este historial de peso registrado esta semana vs. la semana anterior, y el historial de InBody, da un análisis breve (4-6 líneas): qué progresó, qué se estancó, y una recomendación concreta. No apliques cambios, solo recomienda. Responde en texto plano, sin markdown (nada de #, **, -, etc.).\n\n` +
+      `Con este historial de peso, reps y RIR real registrado esta semana vs. la semana anterior, y el historial de InBody, da un análisis breve (4-6 líneas): qué progresó, qué se estancó, y una recomendación concreta. Compara el RIR real contra el planeado de cada ejercicio para distinguir estancamiento real (RIR real igual o más bajo del planeado) de fatiga acumulada o falta de intensidad (RIR real más alto del planeado). No apliques cambios, solo recomienda. Responde en texto plano, sin markdown (nada de #, **, -, etc.).\n\n` +
       `Datos de la semana:\n${context}\n\nHistorial InBody:\n${INBODY_SEED.map(r => `${r.date}: peso ${r.peso}kg, MME ${r.mme}kg, PGC ${r.pgc}%`).join("\n")}`
     );
     state.analysisText = text; state.loadingAnalysis = false;
@@ -712,21 +941,47 @@ root.addEventListener("click", (e) => {
   const el = e.target.closest("[data-action]");
   if (!el) return;
   const a = el.getAttribute("data-action");
-  if (a === "setView"){
-    const v = el.getAttribute("data-view");
-    state.view = v;
-    render();
-    if (v === "summary" && state.analysisFetchedFor !== buildSummarySnapshot()) runAnalysis();
-  } else if (a === "setDay"){
-    const i = +el.getAttribute("data-day");
-    if (i !== state.activeDay){ state.activeDay = i; state.open = {}; state.altOpen = {}; }
-    render();
+  if (a === "goSection"){
+    const idx = +el.getAttribute("data-idx");
+    const track = document.getElementById("section-track");
+    slideTo(track, idx, () => {
+      state.view = SECTION_LABELS[idx].key;
+      render();
+      if (state.view === "summary" && state.analysisFetchedFor !== buildSummarySnapshot()) runAnalysis();
+    });
+  } else if (a === "goDay"){
+    const idx = +el.getAttribute("data-idx");
+    const track = document.getElementById("day-track");
+    slideTo(track, idx, () => {
+      if (idx !== state.activeDay){ state.activeDay = idx; state.open = {}; state.altOpen = {}; }
+      render();
+    });
   } else if (a === "toggleOpen"){
     const k = el.getAttribute("data-key"); state.open[k] = !state.open[k]; render();
   } else if (a === "toggleComplete"){
     const k = el.getAttribute("data-key"); state.completed[k] = !state.completed[k]; render();
   } else if (a === "toggleAlt"){
     const k = el.getAttribute("data-key"); state.altOpen[k] = !state.altOpen[k]; render();
+  } else if (a === "adjWeight"){
+    const wk = el.getAttribute("data-wk");
+    const exkey = el.getAttribute("data-exkey");
+    const setCount = +el.getAttribute("data-setcount");
+    const delta = parseFloat(el.getAttribute("data-delta"));
+    const fallback = parseFloat(el.getAttribute("data-fallback")) || 0;
+    const current = parseFloat(state.weights[wk] ?? fallback) || 0;
+    const next = Math.max(0, Math.round((current + delta) * 2) / 2);
+    state.weights[wk] = String(next);
+    const filled = prefix => Array.from({ length: setCount }, (_, i) => state.weights[`${prefix}${i}`]).every(v => v);
+    if (filled(`${exkey}-`) || filled(`${exkey}-alt-`)) state.completed[exkey] = true;
+    render();
+  } else if (a === "adjReps"){
+    const wk = el.getAttribute("data-wk");
+    const delta = parseInt(el.getAttribute("data-delta"), 10);
+    const fallback = parseInt(el.getAttribute("data-fallback"), 10) || 0;
+    const current = parseInt(state.reps[wk] ?? fallback, 10) || 0;
+    const next = Math.max(0, current + delta);
+    state.reps[wk] = String(next);
+    render();
   } else if (a === "saveInbody"){
     saveInbody();
   } else if (a === "refreshAnalysis"){
@@ -741,19 +996,15 @@ root.addEventListener("input", (e) => {
   const el = e.target.closest("[data-action]");
   if (!el) return;
   const a = el.getAttribute("data-action");
-  if (a === "setWeight") state.weights[el.getAttribute("data-wk")] = el.value;
+  if (a === "setRir") state.rir[el.getAttribute("data-rirkey")] = el.value;
   else if (a === "setInbody"){ state.newInbody[el.getAttribute("data-field")] = el.value; state.newInbody.error = ""; }
   else if (a === "setChat") state.chatInput = el.value;
 });
 
-// on blur of a weight field: recompute auto-complete, then re-render
 root.addEventListener("change", (e) => {
-  const el = e.target.closest("[data-action='setWeight']");
+  const el = e.target.closest("[data-action='setChartExercise']");
   if (!el) return;
-  const exkey = el.getAttribute("data-exkey");
-  const setCount = +el.getAttribute("data-setcount");
-  const filled = prefix => Array.from({ length: setCount }, (_, i) => state.weights[`${prefix}${i}`]).every(v => v);
-  if (filled(`${exkey}-`) || filled(`${exkey}-alt-`)) state.completed[exkey] = true;
+  state.chartExerciseKey = el.value;
   render();
 });
 
