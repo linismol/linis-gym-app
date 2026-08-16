@@ -382,6 +382,10 @@ async function loadRemoteState(){
       }));
     }
     render();
+    // Si el usuario ya estaba en Seguimiento cuando llegaron los datos de Supabase
+    // (carga lenta), el análisis pudo haber corrido antes con datos vacíos/locales.
+    // Reevaluar aquí evita que se quede mostrando un análisis basado en datos viejos.
+    if (state.view === "summary" && state.analysisFetchedFor !== buildSummarySnapshot()) runAnalysis();
   } catch (e) {
     console.warn("No se pudo cargar el progreso guardado en Supabase; usando estado local.", e);
   }
@@ -974,7 +978,7 @@ async function runAnalysis(){
     const text = await coachComplete(
       `Eres /gym-coach, entrenador de fuerza e hipertrofia de Lina, enfocado en volumen de pierna y glúteo. ` +
       `Con este historial de peso, reps y RIR real registrado esta semana vs. la semana anterior, y el historial de InBody, da un análisis breve (4-6 líneas): qué progresó, qué se estancó, y una recomendación concreta. Compara el RIR real contra el planeado de cada ejercicio para distinguir estancamiento real (RIR real igual o más bajo del planeado) de fatiga acumulada o falta de intensidad (RIR real más alto del planeado). No apliques cambios, solo recomienda. Responde en texto plano, sin markdown (nada de #, **, -, etc.).\n\n` +
-      `Datos de la semana:\n${context}\n\nHistorial InBody:\n${INBODY_SEED.map(r => `${r.date}: peso ${r.peso}kg, MME ${r.mme}kg, PGC ${r.pgc}%`).join("\n")}`
+      `Datos de la semana:\n${context}\n\nHistorial InBody:\n${state.inbody.map(r => `${r.date}: peso ${r.peso}kg, MME ${r.mme}kg, PGC ${r.pgc}%`).join("\n")}`
     );
     state.analysisText = text; state.loadingAnalysis = false;
   } catch (e) {
