@@ -314,7 +314,21 @@ const MAIN_COMPOUNDS = [
   { name: "Jalón al pecho en polea (agarre ancho)", day: "Día 2 · Espalda y Bíceps", sessions: [50, 50, 55] },
 ];
 const parseDDMMYYYY = (s) => { const [d, m, y] = s.split("."); return new Date(+y, +m - 1, +d); };
-const TODAY = new Date(2026, 7, 8); // 2026-08-08
+const TODAY = new Date();
+
+// Acepta DD.MM.AAAA con separador ".", "/" o "-" (errores de tecleo comunes),
+// valida que la fecha exista de verdad, y normaliza siempre a "DD.MM.AAAA".
+// Sin esto, una fecha con formato distinto (ej. "20/08/2026") se veía "guardada"
+// en pantalla pero el insert a Supabase fallaba en silencio — pérdida total del dato.
+function normalizeDDMMYYYY(input){
+  const m = String(input).trim().match(/^(\d{1,2})[.\/\-](\d{1,2})[.\/\-](\d{4})$/);
+  if (!m) return null;
+  const day = parseInt(m[1], 10), month = parseInt(m[2], 10), year = parseInt(m[3], 10);
+  if (month < 1 || month > 12 || year < 2000 || year > 2100) return null;
+  const d = new Date(year, month - 1, day);
+  if (d.getFullYear() !== year || d.getMonth() !== month - 1 || d.getDate() !== day) return null;
+  return `${String(day).padStart(2, "0")}.${String(month).padStart(2, "0")}.${year}`;
+}
 
 const SECTION_LABELS = [
   { key: "routine", label: "Rutina" },
@@ -435,9 +449,14 @@ function synthTrend(ex){
   return { maxes, volumes };
 }
 function flattenExercises(){
+  // Ojo: se adjunta el índice ORIGINAL (ei) antes de filtrar. Si el filtro corriera
+  // sobre el array ya filtrado, cualquier ejercicio bodyweight en medio del día
+  // (como el Día 5) desalinearía el índice de todos los ejercicios siguientes,
+  // haciendo que la gráfica muestre el ejercicio equivocado.
   return DAYS.flatMap((d, di) => d.exercises
-    .filter(ex => !!ex.prevWeights && !ex.bodyweight)
-    .map((ex, ei) => ({ key: `${di}-${ei}`, label: `${d.label.split(" · ")[1]} · ${ex.name}` })));
+    .map((ex, ei) => ({ ex, ei }))
+    .filter(({ ex }) => !!ex.prevWeights && !ex.bodyweight)
+    .map(({ ex, ei }) => ({ key: `${di}-${ei}`, label: `${d.label.split(" · ")[1]} · ${ex.name}` })));
 }
 function buildChartPoints(ex, w, h, pad){
   const trend = synthTrend(ex);
@@ -1086,8 +1105,15 @@ async function saveInbody(){
   if (!f.date || !f.peso || !f.mme || !f.pgc || !f.cadera || !f.puntuacion){
     state.newInbody.error = "Completa los 6 campos antes de guardar."; render(); return;
   }
-  const row = { date: f.date, peso: parseFloat(f.peso), mme: parseFloat(f.mme), pgc: parseFloat(f.pgc), cadera: parseFloat(f.cadera), puntuacion: parseFloat(f.puntuacion) };
+  const normalizedDate = normalizeDDMMYYYY(f.date);
+  if (!normalizedDate){
+    state.newInbody.error = "Fecha inválida — usa el formato DD.MM.AAAA (ej. 21.08.2026)."; render(); return;
+  }
+  const row = { date: normalizedDate, peso: parseFloat(f.peso), mme: parseFloat(f.mme), pgc: parseFloat(f.pgc), cadera: parseFloat(f.cadera), puntuacion: parseFloat(f.puntuacion) };
   state.inbody.push(row);
+  // Reordenar por fecha: si se registra una medición atrasada (no la más reciente),
+  // evita que "Más reciente" y el cálculo de semanas en Chequeo queden mal hasta el próximo reload.
+  state.inbody.sort((a, b) => parseDDMMYYYY(a.date) - parseDDMMYYYY(b.date));
   state.newInbody = { date: "", peso: "", mme: "", pgc: "", cadera: "", puntuacion: "", error: "" };
   render();
   if (supa){
@@ -1098,6 +1124,10 @@ async function saveInbody(){
       });
     } catch (e) {
       console.warn("No se pudo guardar la medición InBody en Supabase.", e);
+      // Aviso visible: antes esto fallaba en silencio y la medición se perdía sin
+      // que Lina se enterara. Ahora queda claro que hay que reintentar guardar.
+      state.newInbody.error = "⚠ Se guardó en pantalla pero no en la nube (revisa tu conexión). Si recargas ahora se perderá — vuelve a intentar guardar.";
+      render();
     }
   }
 }
