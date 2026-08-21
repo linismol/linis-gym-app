@@ -306,13 +306,6 @@ const fmtDelta = (curr, prev, unit) => {
   return (d > 0 ? "+" : "") + d + unit + " vs. anterior";
 };
 
-const MAIN_COMPOUNDS = [
-  { name: "Hip Thrust en Booty Builder (Panatta)", day: "Día 1 · Glúteo", sessions: [70, 70, 70] },
-  { name: "Leg Press (Panatta, rango parcial)", day: "Día 3 · Cuádriceps", sessions: [90, 95, 100] },
-  { name: "Good Morning en Smith Machine", day: "Día 5 · Cadena posterior", sessions: [20, 22.5, 25] },
-  { name: "Press militar con mancuernas sentado", day: "Día 4 · Hombro y Tríceps", sessions: [14, 14, 14] },
-  { name: "Jalón al pecho en polea (agarre ancho)", day: "Día 2 · Espalda y Bíceps", sessions: [50, 50, 55] },
-];
 const parseDDMMYYYY = (s) => { const [d, m, y] = s.split("."); return new Date(+y, +m - 1, +d); };
 const TODAY = new Date();
 
@@ -426,6 +419,107 @@ async function persistAppState(){
   } catch (e) {
     console.warn("No se pudo guardar el progreso en Supabase.", e);
   }
+}
+
+/* ==================== Historial real por sesión (tabla exercise_logs) ====================
+   app_state solo guarda el ÚLTIMO valor de cada set (se sobrescribe cada vez), así que no
+   sirve para detectar estancamiento real. exercise_logs guarda una fila por set, por día
+   calendario ("logged_on"), con upsert sobre esa misma fecha — corregir un peso el mismo
+   día actualiza la fila; un día distinto crea una fila nueva (una sesión real). */
+const exerciseKeyFromSetKey = wk => {
+  const altMatch = wk.match(/^(.*)-alt-\d+$/);
+  if (altMatch) return altMatch[1];
+  return wk.replace(/-\d+$/, "");
+};
+
+let logTimer = null;
+const pendingLogExerciseKeys = new Set();
+function scheduleExerciseLog(exerciseKey){
+  if (!supa) return;
+  pendingLogExerciseKeys.add(exerciseKey);
+  clearTimeout(logTimer);
+  logTimer = setTimeout(flushExerciseLogs, 900);
+}
+async function flushExerciseLogs(){
+  if (!supa) { pendingLogExerciseKeys.clear(); return; }
+  const keys = [...pendingLogExerciseKeys];
+  pendingLogExerciseKeys.clear();
+  const todayIso = new Date().toISOString().slice(0, 10);
+  const rows = [];
+  for (const exerciseKey of keys){
+    const [di, ei] = exerciseKey.split("-").map(Number);
+    const ex = DAYS[di] && DAYS[di].exercises[ei];
+    if (!ex || !ex.prevWeights) continue;
+    const addRows = (prevArr, isAlt) => prevArr.forEach((_, si) => {
+      const wk = `${exerciseKey}${isAlt ? "-alt-" : "-"}${si}`;
+      const w = state.weights[wk];
+      if (w == null || w === "") return;
+      const rirKey = isAlt ? `${exerciseKey}-alt` : exerciseKey;
+      rows.push({
+        logged_on: todayIso, day_index: di, exercise_index: ei, set_index: si, is_alt: isAlt,
+        weight: parseFloat(w), reps: state.reps[wk] ? parseInt(state.reps[wk], 10) : null,
+        rir: state.rir[rirKey] ? parseFloat(state.rir[rirKey]) : null,
+        updated_at: new Date().toISOString(),
+      });
+    });
+    addRows(ex.prevWeights, false);
+    if (ex.hasAlt) addRows(ex.altPrevWeights || ex.prevWeights, true);
+  }
+  if (rows.length === 0) return;
+  try {
+    await supa.from("exercise_logs").upsert(rows, { onConflict: "logged_on,day_index,exercise_index,set_index,is_alt" });
+  } catch (e) {
+    console.warn("No se pudo guardar el historial de ejercicio en Supabase.", e);
+  }
+}
+
+const PLATEAU_SESSIONS_NEEDED = 3;
+let plateauFlags = [];
+let plateauReady = false;
+let plateauHasEnoughData = false;
+let plateauLoadFailed = false;
+async function loadPlateauHistory(){
+  if (!supa) { plateauReady = true; plateauLoadFailed = true; return; }
+  try {
+    const { data, error } = await supa.from("exercise_logs")
+      .select("logged_on,day_index,exercise_index,weight")
+      .eq("is_alt", false)
+      .order("logged_on", { ascending: true });
+    if (error) throw error;
+    // Agrupar por ejercicio -> por fecha de sesión -> peso máximo logrado ese día
+    // (el peso más alto entre sets representa el esfuerzo de esa sesión, sin asumir
+    // que el set 0 siempre sea el más pesado — Lina a veces rampea de menor a mayor).
+    const bySessionMax = new Map();
+    for (const row of (data || [])){
+      if (row.weight == null) continue;
+      const exKey = `${row.day_index}-${row.exercise_index}`;
+      if (!bySessionMax.has(exKey)) bySessionMax.set(exKey, new Map());
+      const sessions = bySessionMax.get(exKey);
+      const prevMax = sessions.get(row.logged_on);
+      sessions.set(row.logged_on, prevMax == null ? Number(row.weight) : Math.max(prevMax, Number(row.weight)));
+    }
+    const flags = [];
+    let anyEnough = false;
+    for (const [exKey, sessions] of bySessionMax.entries()){
+      const [di, ei] = exKey.split("-").map(Number);
+      const ex = DAYS[di] && DAYS[di].exercises[ei];
+      if (!ex) continue;
+      const ordered = [...sessions.entries()].sort((a, b) => a[0].localeCompare(b[0]));
+      if (ordered.length < PLATEAU_SESSIONS_NEEDED) continue;
+      anyEnough = true;
+      const lastN = ordered.slice(-PLATEAU_SESSIONS_NEEDED).map(([, w]) => w);
+      if (lastN.every(w => w === lastN[0])){
+        flags.push({ name: ex.name, day: DAYS[di].label, reason: `${PLATEAU_SESSIONS_NEEDED} sesiones seguidas en ${lastN[0]} kg` });
+      }
+    }
+    plateauFlags = flags;
+    plateauHasEnoughData = anyEnough;
+    plateauReady = true; plateauLoadFailed = false;
+  } catch (e) {
+    console.warn("No se pudo cargar el historial de ejercicios para detectar estancamiento (¿falta ejecutar la migración de exercise_logs en Supabase?).", e);
+    plateauReady = true; plateauLoadFailed = true;
+  }
+  if (state.view === "checkup") render();
 }
 
 /* ==================== Progreso sintético (últimas 4 semanas) ====================
@@ -735,8 +829,6 @@ function inbodyBodyHTML(){
 }
 
 function checkupBodyHTML(){
-  const flags = MAIN_COMPOUNDS.filter(c => c.sessions.every(v => v === c.sessions[0]))
-    .map(c => ({ name: c.name, day: c.day, reason: `${c.sessions.length} sesiones seguidas en ${c.sessions[0]} kg` }));
   const lastInbody = state.inbody[state.inbody.length - 1];
   const weeksSince = Math.floor((TODAY - parseDDMMYYYY(lastInbody.date)) / (1000 * 60 * 60 * 24 * 7));
   const inbodyMessage = weeksSince >= 6
@@ -749,13 +841,19 @@ function checkupBodyHTML(){
       ? "MME sin cambio en las últimas 3 mediciones — posible plateau."
       : "MME viene subiendo entre mediciones — sin señal de plateau.");
 
-  const routineCard = flags.length === 0
-    ? `<div style="font-size:13px;line-height:1.55;margin-top:6px;">Todo progresando, sin señales de estancamiento.</div>`
-    : `<div style="display:flex;flex-direction:column;gap:8px;margin-top:8px;">${flags.map(fl =>
-        `<div style="padding:10px 12px;background:var(--color-accent-900);border-radius:var(--radius-sm);">
-          <div style="font-size:13px;font-weight:500;color:var(--color-accent-200);">${esc(fl.name)}</div>
-          <div style="font-size:11px;color:var(--color-accent-300);margin-top:2px;">${esc(fl.day)} · ${esc(fl.reason)}</div>
-        </div>`).join("")}</div>`;
+  const routineCard = !plateauReady
+    ? `<div class="muted" style="font-size:13px;margin-top:6px;">Cargando historial de ejercicios...</div>`
+    : plateauLoadFailed
+      ? `<div class="muted" style="font-size:13px;line-height:1.55;margin-top:6px;">No se pudo cargar el historial de ejercicios (revisa tu conexión, o si falta ejecutar la migración de exercise_logs en Supabase).</div>`
+      : !plateauHasEnoughData
+        ? `<div class="muted" style="font-size:13px;line-height:1.55;margin-top:6px;">Aún no hay suficiente historial para evaluar estancamiento — hacen falta al menos ${PLATEAU_SESSIONS_NEEDED} sesiones registradas por ejercicio. Se irá llenando a medida que sigas registrando tus pesos.</div>`
+        : (plateauFlags.length === 0
+          ? `<div style="font-size:13px;line-height:1.55;margin-top:6px;">Todo progresando, sin señales de estancamiento.</div>`
+          : `<div style="display:flex;flex-direction:column;gap:8px;margin-top:8px;">${plateauFlags.map(fl =>
+              `<div style="padding:10px 12px;background:var(--color-accent-900);border-radius:var(--radius-sm);">
+                <div style="font-size:13px;font-weight:500;color:var(--color-accent-200);">${esc(fl.name)}</div>
+                <div style="font-size:11px;color:var(--color-accent-300);margin-top:2px;">${esc(fl.day)} · ${esc(fl.reason)}</div>
+              </div>`).join("")}</div>`);
 
   return `
     <div style="padding:16px 20px 8px;"><div style="font-size:13px;opacity:0.8;line-height:1.55;">Solo señala — la decisión de qué hacer con esto sigue siendo tuya.</div></div>
@@ -1065,7 +1163,7 @@ root.addEventListener("click", (e) => {
     state.weights[wk] = String(next);
     const filled = prefix => Array.from({ length: setCount }, (_, i) => state.weights[`${prefix}${i}`]).every(v => v);
     if (filled(`${exkey}-`) || filled(`${exkey}-alt-`)) state.completed[exkey] = true;
-    render(); schedulePersist();
+    render(); schedulePersist(); scheduleExerciseLog(exkey);
   } else if (a === "adjReps"){
     const wk = el.getAttribute("data-wk");
     const delta = parseInt(el.getAttribute("data-delta"), 10);
@@ -1073,7 +1171,7 @@ root.addEventListener("click", (e) => {
     const current = parseInt(state.reps[wk] ?? fallback, 10) || 0;
     const next = Math.max(0, current + delta);
     state.reps[wk] = String(next);
-    render(); schedulePersist();
+    render(); schedulePersist(); scheduleExerciseLog(exerciseKeyFromSetKey(wk));
   } else if (a === "saveInbody"){
     saveInbody();
   } else if (a === "refreshAnalysis"){
@@ -1088,7 +1186,12 @@ root.addEventListener("input", (e) => {
   const el = e.target.closest("[data-action]");
   if (!el) return;
   const a = el.getAttribute("data-action");
-  if (a === "setRir"){ state.rir[el.getAttribute("data-rirkey")] = el.value; schedulePersist(); }
+  if (a === "setRir"){
+    const rirKey = el.getAttribute("data-rirkey");
+    state.rir[rirKey] = el.value;
+    schedulePersist();
+    scheduleExerciseLog(rirKey.replace(/-alt$/, ""));
+  }
   else if (a === "setInbody"){ state.newInbody[el.getAttribute("data-field")] = el.value; state.newInbody.error = ""; }
   else if (a === "setChat") state.chatInput = el.value;
 });
@@ -1134,6 +1237,7 @@ async function saveInbody(){
 
 render();
 loadRemoteState();
+loadPlateauHistory();
 </script>
 </body>
 </html>
