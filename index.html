@@ -130,7 +130,6 @@ const DAYS = [
     exercises: [
       { name: "Hip Thrust en Booty Builder (Panatta)", setCount: 4, repsLabel: "8-10 (B-stance)", category: "Activator", tone: "pink",
         prevWeights: [60, 70, 70, 80], photo: PH.bootyBuilder,
-        weekMaxes: [150, 120, 180, 180], weekReps: 12,
         tempoNote: "Pausa de 2 segundos en el pico de contracción de cada rep. Sube la carga si las últimas 2 reps no cuestan.",
         kneeNote: null,
         explanation: "Activator del día: carga pesada en la posición acortada del glúteo, en B-stance para corregir el lado que se queda atrás. Sube la carga frente a la semana pasada.",
@@ -474,40 +473,53 @@ async function flushExerciseLogs(){
 }
 
 const PLATEAU_SESSIONS_NEEDED = 3;
+const CHART_SESSIONS_SHOWN = 6;
 let plateauFlags = [];
 let plateauReady = false;
 let plateauHasEnoughData = false;
 let plateauLoadFailed = false;
-async function loadPlateauHistory(){
-  if (!supa) { plateauReady = true; plateauLoadFailed = true; return; }
+// "di-ei" -> [{date:"YYYY-MM-DD", maxWeight, volume}] ascendente. Alimenta tanto la
+// detección de estancamiento (Chequeo) como las gráficas de progreso por ejercicio
+// (mini-gráfica y Seguimiento) — antes esas gráficas usaban datos de ejemplo inventados.
+let sessionHistoryByExercise = new Map();
+
+async function loadSessionHistory(){
+  if (!supa) { plateauReady = true; plateauLoadFailed = true; render(); return; }
   try {
     const { data, error } = await supa.from("exercise_logs")
-      .select("logged_on,day_index,exercise_index,weight")
+      .select("logged_on,day_index,exercise_index,weight,reps")
       .eq("is_alt", false)
       .order("logged_on", { ascending: true });
     if (error) throw error;
-    // Agrupar por ejercicio -> por fecha de sesión -> peso máximo logrado ese día
-    // (el peso más alto entre sets representa el esfuerzo de esa sesión, sin asumir
-    // que el set 0 siempre sea el más pesado — Lina a veces rampea de menor a mayor).
-    const bySessionMax = new Map();
+    // Agrupar por ejercicio -> por fecha de sesión -> peso máximo y volumen total logrados
+    // ese día (el peso más alto entre sets representa el esfuerzo de esa sesión, sin
+    // asumir que el set 0 siempre sea el más pesado — Lina a veces rampea de menor a mayor;
+    // el volumen suma peso x reps de cada set con ambos datos registrados).
+    const bySession = new Map();
     for (const row of (data || [])){
       if (row.weight == null) continue;
       const exKey = `${row.day_index}-${row.exercise_index}`;
-      if (!bySessionMax.has(exKey)) bySessionMax.set(exKey, new Map());
-      const sessions = bySessionMax.get(exKey);
-      const prevMax = sessions.get(row.logged_on);
-      sessions.set(row.logged_on, prevMax == null ? Number(row.weight) : Math.max(prevMax, Number(row.weight)));
+      if (!bySession.has(exKey)) bySession.set(exKey, new Map());
+      const sessions = bySession.get(exKey);
+      const w = Number(row.weight);
+      const vol = row.reps != null ? w * Number(row.reps) : 0;
+      const prev = sessions.get(row.logged_on) || { max: w, volume: 0 };
+      sessions.set(row.logged_on, { max: Math.max(prev.max, w), volume: prev.volume + vol });
     }
+
+    sessionHistoryByExercise = new Map();
     const flags = [];
     let anyEnough = false;
-    for (const [exKey, sessions] of bySessionMax.entries()){
+    for (const [exKey, sessions] of bySession.entries()){
       const [di, ei] = exKey.split("-").map(Number);
       const ex = DAYS[di] && DAYS[di].exercises[ei];
       if (!ex) continue;
-      const ordered = [...sessions.entries()].sort((a, b) => a[0].localeCompare(b[0]));
+      const ordered = [...sessions.entries()].sort((a, b) => a[0].localeCompare(b[0]))
+        .map(([date, v]) => ({ date, maxWeight: v.max, volume: v.volume }));
+      sessionHistoryByExercise.set(exKey, ordered);
       if (ordered.length < PLATEAU_SESSIONS_NEEDED) continue;
       anyEnough = true;
-      const lastN = ordered.slice(-PLATEAU_SESSIONS_NEEDED).map(([, w]) => w);
+      const lastN = ordered.slice(-PLATEAU_SESSIONS_NEEDED).map(s => s.maxWeight);
       if (lastN.every(w => w === lastN[0])){
         flags.push({ name: ex.name, day: DAYS[di].label, reason: `${PLATEAU_SESSIONS_NEEDED} sesiones seguidas en ${lastN[0]} kg` });
       }
@@ -516,32 +528,40 @@ async function loadPlateauHistory(){
     plateauHasEnoughData = anyEnough;
     plateauReady = true; plateauLoadFailed = false;
   } catch (e) {
-    console.warn("No se pudo cargar el historial de ejercicios para detectar estancamiento (¿falta ejecutar la migración de exercise_logs en Supabase?).", e);
+    console.warn("No se pudo cargar el historial de ejercicios (¿falta ejecutar la migración de exercise_logs en Supabase?).", e);
     plateauReady = true; plateauLoadFailed = true;
   }
-  if (state.view === "checkup") render();
+  render();
 }
 
-/* ==================== Progreso sintético (últimas 4 semanas) ====================
-   Hasta que exista un backend con historial real por sesión, la mini-gráfica y la
-   gráfica de Seguimiento se calculan a partir del último dato conocido (weekMaxes
-   curado, o prevWeights como aproximación). Queda explícito en la UI que son datos
-   de ejemplo. */
-const REP_VARIATION = [0.85, 1.1, 0.95, 1];
-function synthTrend(ex){
-  if (ex.weekMaxes){
-    const baseReps = ex.weekReps || parseInt((ex.repsLabel.match(/\d+/) || ["10"])[0], 10);
-    const setsPerWeek = [ex.setCount - 1, ex.setCount + 1, ex.setCount, ex.setCount];
-    const volumes = ex.weekMaxes.map((m, i) => Math.round(m * Math.round(baseReps * REP_VARIATION[i]) * setsPerWeek[i]));
-    return { maxes: ex.weekMaxes, volumes };
-  }
-  const maxW = Math.max(...ex.prevWeights);
-  const repsTarget = parseInt((ex.repsLabel.match(/\d+/) || ["10"])[0], 10);
-  const factors = [0.88, 0.92, 0.96, 1];
-  const maxes = factors.map(f => Math.round((maxW * f) / 1.25) * 1.25);
-  const volumes = maxes.map((m, i) => Math.round(m * Math.round(repsTarget * REP_VARIATION[i]) * ex.setCount));
-  return { maxes, volumes };
+// Refleja de inmediato (sin esperar la ida y vuelta a Supabase) lo que se acaba de
+// registrar hoy en la mini-gráfica y en Seguimiento. schedulePersist/scheduleExerciseLog
+// se encargan de la persistencia real; esto solo actualiza la memoria local al instante.
+function updateLocalSessionEntry(exerciseKey){
+  const [di, ei] = exerciseKey.split("-").map(Number);
+  const ex = DAYS[di] && DAYS[di].exercises[ei];
+  if (!ex || !ex.prevWeights) return;
+  const todayIso = new Date().toISOString().slice(0, 10);
+  let maxWeight = null, volume = 0, any = false;
+  ex.prevWeights.forEach((_, si) => {
+    const wk = `${exerciseKey}-${si}`;
+    const w = state.weights[wk];
+    if (w == null || w === "") return;
+    any = true;
+    const wNum = parseFloat(w);
+    const repsNum = state.reps[wk] ? parseInt(state.reps[wk], 10) : null;
+    maxWeight = maxWeight == null ? wNum : Math.max(maxWeight, wNum);
+    if (repsNum != null) volume += wNum * repsNum;
+  });
+  if (!any) return;
+  if (!sessionHistoryByExercise.has(exerciseKey)) sessionHistoryByExercise.set(exerciseKey, []);
+  const hist = sessionHistoryByExercise.get(exerciseKey);
+  const idx = hist.findIndex(s => s.date === todayIso);
+  const entry = { date: todayIso, maxWeight, volume };
+  if (idx >= 0) hist[idx] = entry;
+  else { hist.push(entry); hist.sort((a, b) => a.date.localeCompare(b.date)); }
 }
+
 function flattenExercises(){
   // Ojo: se adjunta el índice ORIGINAL (ei) antes de filtrar. Si el filtro corriera
   // sobre el array ya filtrado, cualquier ejercicio bodyweight en medio del día
@@ -552,18 +572,22 @@ function flattenExercises(){
     .filter(({ ex }) => !!ex.prevWeights && !ex.bodyweight)
     .map(({ ex, ei }) => ({ key: `${di}-${ei}`, label: `${d.label.split(" · ")[1]} · ${ex.name}` })));
 }
-function buildChartPoints(ex, w, h, pad){
-  const trend = synthTrend(ex);
+function buildChartPoints(sessions, w, h, pad){
+  const shown = sessions.slice(-CHART_SESSIONS_SHOWN);
   const scale = arr => { const mn = Math.min(...arr), mx = Math.max(...arr); return arr.map(v => mx === mn ? h / 2 : h - pad - ((v - mn) / (mx - mn)) * (h - pad * 2)); };
-  const xs = trend.maxes.map((_, i) => pad + (i * (w - pad * 2)) / (trend.maxes.length - 1));
-  const maxYs = scale(trend.maxes), volYs = scale(trend.volumes);
+  const maxes = shown.map(s => s.maxWeight);
+  const volumes = shown.map(s => s.volume);
+  const xs = shown.length === 1 ? [w / 2] : shown.map((_, i) => pad + (i * (w - pad * 2)) / (shown.length - 1));
+  const maxYs = scale(maxes), volYs = scale(volumes);
   const toPoints = ys => xs.map((x, i) => `${x.toFixed(1)},${ys[i].toFixed(1)}`).join(" ");
   return {
     viewBox: `0 0 ${w} ${h}`,
     maxPoints: toPoints(maxYs),
     volPoints: toPoints(volYs),
-    currentMax: trend.maxes[trend.maxes.length - 1],
-    currentVolume: trend.volumes[trend.volumes.length - 1],
+    currentMax: maxes[maxes.length - 1],
+    currentVolume: Math.round(volumes[volumes.length - 1]),
+    labels: shown.map(s => { const [, m, d] = s.date.split("-"); return `${d}.${m}`; }),
+    count: shown.length,
   };
 }
 
@@ -616,7 +640,7 @@ function setsRowsHTML(ex, key, alt, isMainBodyweight){
   const prev = alt ? (ex.altPrevWeights || ex.prevWeights) : ex.prevWeights;
   const kind = alt ? "alt-" : "";
   const isBW = alt ? (ex.altBodyweight ?? isMainBodyweight) : isMainBodyweight;
-  const step = isBW ? 1 : 2.5;
+  const step = 1; // incremento fijo de 1 kg por clic, para todos los ejercicios
   const repsTarget = (ex.repsLabel.match(/\d+/) || ["10"])[0];
   return prev.map((pw, si) => {
     const wk = `${key}-${kind}${si}`;
@@ -654,10 +678,17 @@ function rirBlockHTML(rirKey){
     </div>`;
 }
 
-function miniChartHTML(ex){
-  const c = buildChartPoints(ex, 240, 70, 6);
+function miniChartHTML(ex, exerciseKey){
+  const sessions = sessionHistoryByExercise.get(exerciseKey) || [];
+  if (sessions.length < 2){
+    return `<div style="margin-top:14px;padding:12px;background:var(--color-neutral-900);border-radius:var(--radius-md);">
+        <div style="font-size:10px;letter-spacing:0.08em;text-transform:uppercase;color:var(--color-neutral-500);margin-bottom:6px;">Progreso por sesión</div>
+        <div style="font-size:12px;color:var(--color-neutral-500);">Aún no hay suficiente historial para graficar (necesitas al menos 2 sesiones registradas).</div>
+      </div>`;
+  }
+  const c = buildChartPoints(sessions, 240, 70, 6);
   return `<div style="margin-top:14px;padding:12px;background:var(--color-neutral-900);border-radius:var(--radius-md);">
-      <div style="font-size:10px;letter-spacing:0.08em;text-transform:uppercase;color:var(--color-neutral-500);margin-bottom:6px;">Progreso · últimas 4 semanas (datos de ejemplo)</div>
+      <div style="font-size:10px;letter-spacing:0.08em;text-transform:uppercase;color:var(--color-neutral-500);margin-bottom:6px;">Progreso por sesión (últimas ${c.count})</div>
       <svg viewBox="${c.viewBox}" style="width:100%;height:70px;overflow:visible;">
         <polyline points="${c.volPoints}" fill="none" stroke="var(--color-accent)" stroke-width="2"></polyline>
         <polyline points="${c.maxPoints}" fill="none" stroke="var(--color-neutral-300)" stroke-width="2"></polyline>
@@ -693,7 +724,7 @@ function exerciseHTML(ex, i, dayIndex){
         ${rirBlockHTML(key)}
       </div>` : "";
 
-    const miniChart = (hasSets && !isBodyweight) ? miniChartHTML(ex) : "";
+    const miniChart = (hasSets && !isBodyweight) ? miniChartHTML(ex, key) : "";
 
     let altBlock = "";
     if (altOpen){
@@ -873,22 +904,50 @@ function checkupBodyHTML(){
 function summaryChartHTML(){
   const options = flattenExercises();
   const validKey = options.some(o => o.key === state.chartExerciseKey) ? state.chartExerciseKey : (options[0] ? options[0].key : "0-0");
-  const [di, ei] = validKey.split("-").map(Number);
-  const ex = DAYS[di].exercises[ei];
-  const c = buildChartPoints(ex, 280, 90, 6);
-  const weekLabels = ["S-3", "S-2", "S-1", "Hoy"];
+  const sessions = sessionHistoryByExercise.get(validKey) || [];
+  const selector = `<select class="input" style="margin-top:10px;width:100%;" data-action="setChartExercise">
+      ${options.map(o => `<option value="${o.key}" ${o.key === validKey ? "selected" : ""}>${esc(o.label)}</option>`).join("")}
+    </select>`;
+
+  if (!plateauReady){
+    return `<div style="padding:14px 20px 8px;">
+      <div class="card elev-sm">
+        <div class="card-kicker">Gráfica de progreso</div>
+        ${selector}
+        <div style="font-size:12px;margin-top:12px;" class="muted">Cargando historial...</div>
+      </div>
+    </div>`;
+  }
+  if (plateauLoadFailed){
+    return `<div style="padding:14px 20px 8px;">
+      <div class="card elev-sm">
+        <div class="card-kicker">Gráfica de progreso</div>
+        ${selector}
+        <div style="font-size:12px;margin-top:12px;color:var(--color-accent-300);">No se pudo cargar el historial real (¿falta ejecutar la migración de exercise_logs en Supabase?).</div>
+      </div>
+    </div>`;
+  }
+  if (sessions.length < 2){
+    return `<div style="padding:14px 20px 8px;">
+      <div class="card elev-sm">
+        <div class="card-kicker">Gráfica de progreso</div>
+        ${selector}
+        <div style="font-size:12px;margin-top:12px;" class="muted">Aún no hay suficiente historial para este ejercicio (necesitas al menos 2 sesiones registradas).</div>
+      </div>
+    </div>`;
+  }
+
+  const c = buildChartPoints(sessions, 280, 90, 6);
   return `<div style="padding:14px 20px 8px;">
       <div class="card elev-sm">
-        <div class="card-kicker">Gráfica de progreso · últimas 4 semanas</div>
-        <select class="input" style="margin-top:10px;width:100%;" data-action="setChartExercise">
-          ${options.map(o => `<option value="${o.key}" ${o.key === validKey ? "selected" : ""}>${esc(o.label)}</option>`).join("")}
-        </select>
+        <div class="card-kicker">Gráfica de progreso · últimas ${c.count} sesiones</div>
+        ${selector}
         <svg viewBox="${c.viewBox}" style="width:100%;height:120px;margin-top:12px;overflow:visible;">
           <polyline points="${c.volPoints}" fill="none" stroke="var(--color-accent)" stroke-width="2"></polyline>
           <polyline points="${c.maxPoints}" fill="none" stroke="var(--color-neutral-300)" stroke-width="2"></polyline>
         </svg>
         <div style="display:flex;justify-content:space-between;margin-top:4px;">
-          ${weekLabels.map(wl => `<div style="font-size:10px;color:var(--color-neutral-500);">${wl}</div>`).join("")}
+          ${c.labels.map(wl => `<div style="font-size:10px;color:var(--color-neutral-500);">${wl}</div>`).join("")}
         </div>
         <div style="display:flex;gap:16px;margin-top:12px;font-size:11px;color:var(--color-neutral-500);">
           <div style="display:flex;align-items:center;gap:6px;"><span style="width:10px;height:2px;background:var(--color-accent);display:inline-block;"></span>Volumen total (hoy: ${c.currentVolume})</div>
@@ -1163,6 +1222,7 @@ root.addEventListener("click", (e) => {
     state.weights[wk] = String(next);
     const filled = prefix => Array.from({ length: setCount }, (_, i) => state.weights[`${prefix}${i}`]).every(v => v);
     if (filled(`${exkey}-`) || filled(`${exkey}-alt-`)) state.completed[exkey] = true;
+    updateLocalSessionEntry(exkey);
     render(); schedulePersist(); scheduleExerciseLog(exkey);
   } else if (a === "adjReps"){
     const wk = el.getAttribute("data-wk");
@@ -1171,6 +1231,7 @@ root.addEventListener("click", (e) => {
     const current = parseInt(state.reps[wk] ?? fallback, 10) || 0;
     const next = Math.max(0, current + delta);
     state.reps[wk] = String(next);
+    updateLocalSessionEntry(exerciseKeyFromSetKey(wk));
     render(); schedulePersist(); scheduleExerciseLog(exerciseKeyFromSetKey(wk));
   } else if (a === "saveInbody"){
     saveInbody();
@@ -1237,7 +1298,7 @@ async function saveInbody(){
 
 render();
 loadRemoteState();
-loadPlateauHistory();
+loadSessionHistory();
 </script>
 </body>
 </html>
