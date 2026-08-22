@@ -473,6 +473,14 @@ const exerciseKeyFromSetKey = wk => {
   return wk.replace(/-\d+$/, "");
 };
 
+// Un ejercicio solo cuenta como "sesión de hoy" (para el historial, el checkbox de
+// completado y las gráficas) cuando TODAS las series asignadas ese día tienen peso
+// registrado — llenar una sola serie no debe darlo por terminado ni sumar al historial.
+function isExerciseFullyFilled(exerciseKey, setCount, alt){
+  const prefix = alt ? `${exerciseKey}-alt-` : `${exerciseKey}-`;
+  return Array.from({ length: setCount }, (_, i) => state.weights[`${prefix}${i}`]).every(v => v);
+}
+
 let logTimer = null;
 const pendingLogExerciseKeys = new Set();
 function scheduleExerciseLog(exerciseKey){
@@ -503,8 +511,8 @@ async function flushExerciseLogs(){
         updated_at: new Date().toISOString(),
       });
     });
-    addRows(ex.prevWeights, false);
-    if (ex.hasAlt) addRows(ex.altPrevWeights || ex.prevWeights, true);
+    if (isExerciseFullyFilled(exerciseKey, ex.setCount, false)) addRows(ex.prevWeights, false);
+    if (ex.hasAlt && isExerciseFullyFilled(exerciseKey, ex.setCount, true)) addRows(ex.altPrevWeights || ex.prevWeights, true);
   }
   if (rows.length === 0) return;
   try {
@@ -583,19 +591,19 @@ function updateLocalSessionEntry(exerciseKey){
   const [di, ei] = exerciseKey.split("-").map(Number);
   const ex = DAYS[di] && DAYS[di].exercises[ei];
   if (!ex || !ex.prevWeights) return;
+  // Solo cuenta como sesión (para la gráfica) cuando ya se llenaron todas las series
+  // de hoy — evita que registrar una sola serie ya dispare un punto en el historial.
+  if (!isExerciseFullyFilled(exerciseKey, ex.setCount, false)) return;
   const todayIso = new Date().toISOString().slice(0, 10);
-  let maxWeight = null, volume = 0, any = false;
+  let maxWeight = null, volume = 0;
   ex.prevWeights.forEach((_, si) => {
     const wk = `${exerciseKey}-${si}`;
     const w = state.weights[wk];
-    if (w == null || w === "") return;
-    any = true;
     const wNum = parseFloat(w);
     const repsNum = state.reps[wk] ? parseInt(state.reps[wk], 10) : null;
     maxWeight = maxWeight == null ? wNum : Math.max(maxWeight, wNum);
     if (repsNum != null) volume += wNum * repsNum;
   });
-  if (!any) return;
   if (!sessionHistoryByExercise.has(exerciseKey)) sessionHistoryByExercise.set(exerciseKey, []);
   const hist = sessionHistoryByExercise.get(exerciseKey);
   const idx = hist.findIndex(s => s.date === todayIso);
@@ -723,10 +731,10 @@ function rirBlockHTML(rirKey){
 
 function miniChartHTML(ex, exerciseKey){
   const sessions = sessionHistoryByExercise.get(exerciseKey) || [];
-  if (sessions.length < 2){
+  if (sessions.length < 1){
     return `<div style="margin-top:14px;padding:12px;background:var(--color-neutral-900);border-radius:var(--radius-md);">
         <div style="font-size:10px;letter-spacing:0.08em;text-transform:uppercase;color:var(--color-neutral-500);margin-bottom:6px;">Progreso por sesión</div>
-        <div style="font-size:12px;color:var(--color-neutral-500);">Aún no hay suficiente historial para graficar (necesitas al menos 2 sesiones registradas).</div>
+        <div style="font-size:12px;color:var(--color-neutral-500);">Todavía no hay ninguna sesión completa registrada — se grafica en cuanto termines de llenar todas las series por primera vez.</div>
       </div>`;
   }
   const c = buildChartPoints(sessions, 240, 70, 6);
@@ -970,12 +978,12 @@ function summaryChartHTML(){
       </div>
     </div>`;
   }
-  if (sessions.length < 2){
+  if (sessions.length < 1){
     return `<div style="padding:14px 20px 8px;">
       <div class="card elev-sm">
         <div class="card-kicker">Gráfica de progreso</div>
         ${selector}
-        <div style="font-size:12px;margin-top:12px;" class="muted">Aún no hay suficiente historial para este ejercicio (necesitas al menos 2 sesiones registradas).</div>
+        <div style="font-size:12px;margin-top:12px;" class="muted">Todavía no hay ninguna sesión completa registrada para este ejercicio — se grafica en cuanto termines de llenar todas las series por primera vez.</div>
       </div>
     </div>`;
   }
@@ -1264,8 +1272,7 @@ root.addEventListener("click", (e) => {
     const current = parseFloat(state.weights[wk] ?? fallback) || 0;
     const next = Math.max(0, Math.round((current + delta) * 2) / 2);
     state.weights[wk] = String(next);
-    const filled = prefix => Array.from({ length: setCount }, (_, i) => state.weights[`${prefix}${i}`]).every(v => v);
-    if (filled(`${exkey}-`) || filled(`${exkey}-alt-`)) state.completed[exkey] = true;
+    if (isExerciseFullyFilled(exkey, setCount, false) || isExerciseFullyFilled(exkey, setCount, true)) state.completed[exkey] = true;
     updateLocalSessionEntry(exkey);
     render(); schedulePersist(); scheduleExerciseLog(exkey);
   } else if (a === "adjReps"){
