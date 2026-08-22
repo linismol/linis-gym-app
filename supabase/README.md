@@ -18,6 +18,7 @@ app (linismol.github.io) ──fetch/SDK──► Supabase (Postgres + REST vía
 | Ejercicio seleccionado en la gráfica de Seguimiento | ✅ `app_state` |
 | Historial de mediciones InBody | ✅ `inbody_measurements` |
 | Historial real por sesión (para detectar estancamiento) | ✅ `exercise_logs` (migración 002) |
+| Peso base ("ant.") que rueda cada semana + reinicio automático | ✅ `app_state` (migración 003) |
 | Chat con /gym-coach y el análisis semanal | ❌ se queda solo en memoria — es barato regenerarlo, no aporta guardarlo |
 
 ## Paso a paso (tú)
@@ -50,6 +51,26 @@ No reemplaza nada de la migración 001 — es una tabla nueva, adicional.
   explícitamente que aún no hay suficiente historial (no dice "todo bien" por defecto).
 - Si no corres esta migración, Chequeo simplemente muestra un aviso de que no pudo
   cargar el historial — el resto de la app sigue funcionando igual.
+
+## Migración 003 — reinicio semanal automático
+
+Cada semana, lo que registraste debe pasar a ser el nuevo "ant." (peso base) para la
+semana que empieza, y peso/reps/RIR/completado deben quedar en blanco. Esta migración
+agrega 2 columnas a `app_state` para que eso funcione:
+
+- `prev_weights`: el último peso registrado por serie, usado como "ant." de la semana nueva.
+- `week_anchor`: la fecha (lunes) de la semana que se está mostrando.
+
+**Para activarlo:** SQL Editor → pega **todo** el contenido de
+[`supabase/migration_003_weekly_reset.sql`](migration_003_weekly_reset.sql) → **Run**.
+
+- No hay backend con cron en esta app estática — el reinicio ocurre la **primera vez
+  que abres la app después de que empiece el lunes** (hora local de tu celular/PC),
+  comparando la fecha guardada contra la actual. Si no abres la app justo el lunes,
+  se reinicia en cuanto la abras esa semana (no se salta el reinicio).
+- Si no corres esta migración, el reinicio semanal simplemente no se guarda entre
+  sesiones (el "ant." se queda fijo en los valores originales del código) — el resto
+  de la app sigue funcionando igual.
 
 ## Nota de privacidad
 

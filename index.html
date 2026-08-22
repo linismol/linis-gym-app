@@ -365,6 +365,40 @@ const supa = (window.supabase && SUPABASE_URL && SUPABASE_KEY)
 const isoToDMY = iso => iso.split("-").reverse().join(".");
 const dmyToIso = dmy => dmy.split(".").reverse().join("-");
 
+// Reinicio semanal: la noche del domingo termina la semana. La app no tiene backend
+// con cron, así que el reinicio ocurre la primera vez que se abre la app después de
+// que empiece el lunes (hora local del dispositivo): lo registrado la semana pasada
+// se vuelve el nuevo "ant." (peso base) y peso/reps/RIR/completado quedan en blanco.
+function mondayIsoOf(date){
+  const d = new Date(date.getFullYear(), date.getMonth(), date.getDate());
+  const day = d.getDay();
+  d.setDate(d.getDate() + (day === 0 ? -6 : 1 - day));
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+}
+function resetForNewWeek(){
+  for (const [wk, v] of Object.entries(state.weights)){
+    if (v != null && v !== "") state.prevWeights[wk] = v;
+  }
+  state.weights = {};
+  state.reps = {};
+  state.rir = {};
+  state.completed = {};
+}
+function checkWeeklyReset(){
+  const currentMonday = mondayIsoOf(new Date());
+  if (state.weekAnchor && state.weekAnchor < currentMonday) resetForNewWeek();
+  if (state.weekAnchor !== currentMonday){
+    state.weekAnchor = currentMonday;
+    persistAppState();
+  }
+}
+function baselineWeight(exerciseKey, si, alt, ex){
+  const wk = alt ? `${exerciseKey}-alt-${si}` : `${exerciseKey}-${si}`;
+  const stored = state.prevWeights[wk];
+  const arr = alt ? (ex.altPrevWeights || ex.prevWeights) : ex.prevWeights;
+  return (stored != null && stored !== "") ? parseFloat(stored) : arr[si];
+}
+
 async function loadRemoteState(){
   if (!supa) return;
   try {
@@ -378,7 +412,13 @@ async function loadRemoteState(){
       state.reps = row.reps || {};
       state.rir = row.rir || {};
       state.completed = row.completed || {};
+      state.prevWeights = row.prev_weights || {};
+      state.weekAnchor = row.week_anchor || null;
       state.chartExerciseKey = row.chart_exercise_key || state.chartExerciseKey;
+      // Solo se revisa el reinicio semanal con datos remotos confirmados: si el fetch
+      // falla, state.weights se queda en su default local {} y NO queremos que eso se
+      // confunda con "semana vacía" y sobreescriba lo real guardado en Supabase.
+      checkWeeklyReset();
     }
     if (!e2 && inbodyRows && inbodyRows.length){
       state.inbody = inbodyRows.map(r => ({
@@ -412,6 +452,8 @@ async function persistAppState(){
       reps: state.reps,
       rir: state.rir,
       completed: state.completed,
+      prev_weights: state.prevWeights,
+      week_anchor: state.weekAnchor,
       chart_exercise_key: state.chartExerciseKey,
       updated_at: new Date().toISOString(),
     });
@@ -594,7 +636,7 @@ function buildChartPoints(sessions, w, h, pad){
 /* ==================== State ==================== */
 const state = {
   view: "routine", activeDay: 0,
-  open: {}, altOpen: {}, completed: {}, weights: {}, reps: {}, rir: {},
+  open: {}, altOpen: {}, completed: {}, weights: {}, reps: {}, rir: {}, prevWeights: {}, weekAnchor: null,
   inbody: INBODY_SEED.map(r => ({ ...r })),
   newInbody: { date: "", peso: "", mme: "", pgc: "", cadera: "", puntuacion: "", error: "" },
   analysisText: "", analysisError: "", loadingAnalysis: false, analysisFetchedFor: null,
@@ -642,14 +684,15 @@ function setsRowsHTML(ex, key, alt, isMainBodyweight){
   const isBW = alt ? (ex.altBodyweight ?? isMainBodyweight) : isMainBodyweight;
   const step = 1; // incremento fijo de 1 kg por clic, para todos los ejercicios
   const repsTarget = (ex.repsLabel.match(/\d+/) || ["10"])[0];
-  return prev.map((pw, si) => {
+  return prev.map((_, si) => {
     const wk = `${key}-${kind}${si}`;
+    const baseline = baselineWeight(key, si, alt, ex);
     const val = state.weights[wk] ?? "";
-    const displayValue = val || (isBW ? "BW" : String(pw));
-    const prevLabel = isBW ? "peso corporal" : `${pw} kg ant.`;
+    const displayValue = val || (isBW ? "BW" : String(baseline));
+    const prevLabel = isBW ? "peso corporal" : `${baseline} kg ant.`;
     const repsVal = state.reps[wk] ?? "";
     const repsDisplay = repsVal || String(repsTarget);
-    const weightAttrs = `data-wk="${wk}" data-exkey="${key}" data-setcount="${ex.setCount}" data-fallback="${pw}"`;
+    const weightAttrs = `data-wk="${wk}" data-exkey="${key}" data-setcount="${ex.setCount}" data-fallback="${baseline}"`;
     const repsAttrs = `data-wk="${wk}" data-fallback="${repsTarget}"`;
     return `<div style="display:flex;align-items:center;gap:4px;">
         <div style="width:12px;flex:none;font-size:12px;color:var(--color-neutral-500);">${si + 1}</div>
@@ -964,14 +1007,14 @@ function summaryBodyHTML(){
     exercises: d.exercises.filter(ex => !!ex.prevWeights).flatMap((ex, ei) => {
       const key = `${di}-${ei}-0`, altKey = `${di}-${ei}-alt-0`;
       const exerciseKey = `${di}-${ei}`;
-      const thisWeek = state.weights[key], lastWeek = ex.prevWeights[0];
+      const thisWeek = state.weights[key], lastWeek = baselineWeight(exerciseKey, 0, false, ex);
       const thisReps = state.reps[key], thisRir = state.rir[exerciseKey];
       const m = metric(thisWeek, thisReps, thisRir);
       const rows = [{ name: ex.name, compareLabel: m ? `${m} (ant. ${lastWeek} kg)` : `sin registrar (ant. ${lastWeek} kg)` }];
       const altThisWeek = state.weights[altKey];
       if (altThisWeek) {
         const altReps = state.reps[altKey], altRir = state.rir[`${exerciseKey}-alt`];
-        const altLastWeek = (ex.altPrevWeights || ex.prevWeights)[0];
+        const altLastWeek = baselineWeight(exerciseKey, 0, true, ex);
         rows.push({ name: `↳ ${ex.altName} (alternativa)`, compareLabel: `${metric(altThisWeek, altReps, altRir)} (ant. ${altLastWeek} kg)` });
       }
       return rows;
@@ -1134,9 +1177,10 @@ function buildSummarySnapshot(){
     const lines = d.exercises.filter(ex => !!ex.prevWeights).map((ex, ei) => {
       const key = `${di}-${ei}-0`, exerciseKey = `${di}-${ei}`;
       const tw = state.weights[key], tr = state.reps[key], rirv = state.rir[exerciseKey];
+      const lastWeek = baselineWeight(exerciseKey, 0, false, ex);
       const detail = tw
-        ? `${tw} kg${tr ? " x " + tr + " reps" : ""}${rirv ? " · RIR real " + rirv : ""} (ant. ${ex.prevWeights[0]} kg)`
-        : `sin registrar (ant. ${ex.prevWeights[0]} kg)`;
+        ? `${tw} kg${tr ? " x " + tr + " reps" : ""}${rirv ? " · RIR real " + rirv : ""} (ant. ${lastWeek} kg)`
+        : `sin registrar (ant. ${lastWeek} kg)`;
       return `  ${ex.name}: ${detail}`;
     });
     return `${d.label}\n${lines.join("\n")}`;
@@ -1299,6 +1343,9 @@ async function saveInbody(){
 render();
 loadRemoteState();
 loadSessionHistory();
+// Sin Supabase no hay dato remoto que arriesgar: el reinicio semanal se revisa
+// directamente sobre el estado local.
+if (!supa) checkWeeklyReset();
 </script>
 </body>
 </html>
