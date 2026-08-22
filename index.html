@@ -489,36 +489,66 @@ function scheduleExerciseLog(exerciseKey){
   clearTimeout(logTimer);
   logTimer = setTimeout(flushExerciseLogs, 900);
 }
+function buildLogRowsForExercise(exerciseKey, todayIso){
+  const [di, ei] = exerciseKey.split("-").map(Number);
+  const ex = DAYS[di] && DAYS[di].exercises[ei];
+  if (!ex || !ex.prevWeights) return [];
+  const rows = [];
+  const addRows = (prevArr, isAlt) => prevArr.forEach((_, si) => {
+    const wk = `${exerciseKey}${isAlt ? "-alt-" : "-"}${si}`;
+    const w = state.weights[wk];
+    if (w == null || w === "") return;
+    const rirKey = isAlt ? `${exerciseKey}-alt` : exerciseKey;
+    rows.push({
+      logged_on: todayIso, day_index: di, exercise_index: ei, set_index: si, is_alt: isAlt,
+      weight: parseFloat(w), reps: state.reps[wk] ? parseInt(state.reps[wk], 10) : null,
+      rir: state.rir[rirKey] ? parseFloat(state.rir[rirKey]) : null,
+      updated_at: new Date().toISOString(),
+    });
+  });
+  if (isExerciseFullyFilled(exerciseKey, ex.setCount, false)) addRows(ex.prevWeights, false);
+  if (ex.hasAlt && isExerciseFullyFilled(exerciseKey, ex.setCount, true)) addRows(ex.altPrevWeights || ex.prevWeights, true);
+  return rows;
+}
 async function flushExerciseLogs(){
   if (!supa) { pendingLogExerciseKeys.clear(); return; }
   const keys = [...pendingLogExerciseKeys];
   pendingLogExerciseKeys.clear();
   const todayIso = new Date().toISOString().slice(0, 10);
-  const rows = [];
-  for (const exerciseKey of keys){
-    const [di, ei] = exerciseKey.split("-").map(Number);
-    const ex = DAYS[di] && DAYS[di].exercises[ei];
-    if (!ex || !ex.prevWeights) continue;
-    const addRows = (prevArr, isAlt) => prevArr.forEach((_, si) => {
-      const wk = `${exerciseKey}${isAlt ? "-alt-" : "-"}${si}`;
-      const w = state.weights[wk];
-      if (w == null || w === "") return;
-      const rirKey = isAlt ? `${exerciseKey}-alt` : exerciseKey;
-      rows.push({
-        logged_on: todayIso, day_index: di, exercise_index: ei, set_index: si, is_alt: isAlt,
-        weight: parseFloat(w), reps: state.reps[wk] ? parseInt(state.reps[wk], 10) : null,
-        rir: state.rir[rirKey] ? parseFloat(state.rir[rirKey]) : null,
-        updated_at: new Date().toISOString(),
-      });
-    });
-    if (isExerciseFullyFilled(exerciseKey, ex.setCount, false)) addRows(ex.prevWeights, false);
-    if (ex.hasAlt && isExerciseFullyFilled(exerciseKey, ex.setCount, true)) addRows(ex.altPrevWeights || ex.prevWeights, true);
-  }
+  const rows = keys.flatMap(exerciseKey => buildLogRowsForExercise(exerciseKey, todayIso));
   if (rows.length === 0) return;
   try {
     await supa.from("exercise_logs").upsert(rows, { onConflict: "logged_on,day_index,exercise_index,set_index,is_alt" });
   } catch (e) {
     console.warn("No se pudo guardar el historial de ejercicio en Supabase.", e);
+  }
+}
+
+// Sincroniza una sola vez al abrir la app cualquier ejercicio que ya esté completo en
+// el estado actual pero que todavía no tenga ninguna sesión real registrada esta
+// semana — cubre ejercicios que se llenaron antes de correr la migración de
+// exercise_logs (o antes de esta regla), cuyo registro nunca llegó a guardarse.
+// Se fecha como "hoy" porque no hay forma de saber en qué día real se llenó cada uno.
+async function catchUpMissingSessionLogs(){
+  if (!supa) return;
+  const todayIso = new Date().toISOString().slice(0, 10);
+  const rows = [];
+  DAYS.forEach((d, di) => {
+    d.exercises.forEach((ex, ei) => {
+      if (!ex.prevWeights) return;
+      const exerciseKey = `${di}-${ei}`;
+      const hasSessionThisWeek = (sessionHistoryByExercise.get(exerciseKey) || [])
+        .some(s => !state.weekAnchor || s.date >= state.weekAnchor);
+      if (hasSessionThisWeek) return;
+      rows.push(...buildLogRowsForExercise(exerciseKey, todayIso));
+    });
+  });
+  if (rows.length === 0) return;
+  try {
+    await supa.from("exercise_logs").upsert(rows, { onConflict: "logged_on,day_index,exercise_index,set_index,is_alt" });
+    await loadSessionHistory();
+  } catch (e) {
+    console.warn("No se pudo sincronizar el historial pendiente de esta semana.", e);
   }
 }
 
@@ -1348,8 +1378,11 @@ async function saveInbody(){
 }
 
 render();
-loadRemoteState();
-loadSessionHistory();
+Promise.all([loadRemoteState(), loadSessionHistory()]).then(() => {
+  // Solo si el historial cargó bien: con plateauLoadFailed no sabemos si de verdad
+  // faltan sesiones o si simplemente no pudimos leerlas — mejor no escribir a ciegas.
+  if (supa && plateauReady && !plateauLoadFailed) catchUpMissingSessionLogs();
+});
 // Sin Supabase no hay dato remoto que arriesgar: el reinicio semanal se revisa
 // directamente sobre el estado local.
 if (!supa) checkWeeklyReset();
