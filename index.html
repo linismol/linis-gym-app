@@ -126,170 +126,178 @@ const yt = (q) => "https://www.youtube.com/results?search_query=" + encodeURICom
 const TONE_MAP = { pink: "accent", orange: "accent-2", yellow: "neutral" };
 
 const DAYS = [
-  { label: "Día 1 · Glúteo", focusNote: "Patrón de empuje de cadera con base de pierna. Rango de rodilla controlado.", knee: true, tags: true,
+  { label: "Día 1 · Glúteo", focusNote: "Mesociclo 2 · ~50-55 min (4 ejercicios + 1 opcional si te sobra tiempo). Unilaterales: empieza por la pierna izquierda.", knee: true, tags: true,
+    activation: [
+      { name: "Caminata lateral con banda (band walk)", detail: "2 x 10 pasos por lado, banda sobre las rodillas. Activa glúteo medio." },
+      { name: "Puente de glúteo sin carga", detail: "2 x 15, pausa de 1 s arriba. Que el glúteo dispare antes que los isquios." },
+      { name: "Frog pump", detail: "2 x 20 rápidas, justo antes del primer ejercicio. Plantas juntas, rodillas abiertas." },
+    ],
     exercises: [
-      { name: "Hip Thrust en Booty Builder (Panatta)", setCount: 4, repsLabel: "8-10 (B-stance)", category: "Activator", tone: "pink",
-        prevWeights: [60, 70, 70, 80], photo: PH.bootyBuilder,
-        tempoNote: "Pausa de 2 segundos en el pico de contracción de cada rep. Sube la carga si las últimas 2 reps no cuestan.",
+      { name: "Hip Thrust con barra en Smith Machine (pausa 2 s)", setCount: 3, repsLabel: "6-8", category: "Activator", tone: "pink", rest: "2-3 min",
+        baseFrom: "0-0", baseFactor: 0.8, prevWeights: [80.0, 80.0, 80.0], photo: PH.smith,
+        tempoNote: "Pausa de 2 s arriba con extensión completa de cadera (costillas abajo, mentón al pecho). Pies al ancho de cadera; abre un poco los pies en la última serie.",
         kneeNote: null,
-        explanation: "Activator del día: carga pesada en la posición acortada del glúteo, en B-stance para corregir el lado que se queda atrás. Sube la carga frente a la semana pasada.",
-        hasAlt: true, altName: "Hip Thrust con barra en Smith Machine", altPhoto: PH.smith, altExplanation: "Mismo patrón y posición acortada, con la barra fija en el riel. Mantén la pausa en el pico y la B-stance." },
-      { name: "Peso muerto rumano con mancuernas", setCount: 4, repsLabel: "10-12", category: "Stretcher", tone: "orange",
-        prevWeights: [18, 18, 20, 20], photo: PH.dumbbells,
-        tempoNote: "Baja controlado 3 segundos hasta sentir el estiramiento en isquios/glúteo, sin redondear la espalda baja.",
+        explanation: "Activator del día y tu ejercicio más pesado: en tu historial mueves 100-145 kg en hip thrust, así que el glúteo responde a carga alta. Cambia la Booty Builder por barra en Smith para variar el perfil de resistencia. La diferencia entre piernas la trabajan el peso muerto a una pierna y la zancada lateral.",
+        hasAlt: true, altName: "Hip Thrust en Booty Builder (Panatta)", altPhoto: PH.bootyBuilder, altExplanation: "Mismo patrón y posición acortada, con la máquina guiando el recorrido." },
+      { name: "Sentadilla sumo en Smith Machine (rango controlado)", setCount: 3, repsLabel: "8-10", category: "Stretcher", tone: "orange", rest: "2 min",
+        baseFrom: "0-3", baseFactor: 1, prevWeights: [35.0, 35.0, 35.0], photo: PH.smith,
+        tempoNote: "Pies muy abiertos y puntas hacia afuera, torso erguido; baja hasta ~90° de rodilla y sube empujando el piso con los talones.",
+        kneeNote: "Rango controlado: sin profundidad completa.",
+        explanation: "La postura ancha pone el glúteo mayor y los aductores en elongación con rodilla menos adelantada que la sentadilla normal. Es un patrón nuevo frente al bloque anterior.",
+        hasAlt: true, altName: "Sentadilla sumo con mancuerna (goblet)", altPhoto: PH.dumbbells, altExplanation: "Misma postura ancha con carga ligera." },
+      { name: "Peso muerto a una pierna con mancuerna", setCount: 3, repsLabel: "8-10 por lado", category: "Stretcher", tone: "orange", rest: "90-120 s",
+        baseFrom: "0-1", baseFactor: 0.5, prevWeights: [20.0, 20.0, 20.0], photo: PH.dumbbells,
+        tempoNote: "Bisagra de cadera sobre una pierna con rodilla suave, espalda neutra, pierna libre atrás como contrapeso. Empieza por la izquierda.",
         kneeNote: null,
-        explanation: "Stretcher: trabaja el glúteo en su posición más elongada. El movimiento sale de la cadera, no de la rodilla.",
-        hasAlt: true, altName: "Peso muerto rumano en Smith Machine", altPhoto: PH.smith, altExplanation: "Misma bisagra de cadera, con la barra guiada — útil si el agarre de mancuernas te limita antes que el glúteo." },
-      { name: "Sentadilla búlgara (rango controlado)", setCount: 3, repsLabel: "10 por lado", category: "Stretcher", tone: "orange",
-        prevWeights: [14, 16, 16], photo: PH.dumbbells,
-        tempoNote: "Baja solo hasta donde la rodilla de atrás se acerque al piso sin llegar — tu rango controlado de siempre.",
-        kneeNote: "Respeta tu rango controlado: no bajes a profundidad completa.",
-        explanation: "Stretcher unilateral: obliga a estabilizar cada pierna por separado y ayuda a parejar el desarrollo entre lados.",
-        hasAlt: true, altName: "Zancada estática en Smith Machine (rango controlado)", altPhoto: PH.smith, altExplanation: "Misma restricción de rango, con la barra guiada — más estable si el equilibrio con mancuernas te limita la carga." },
-      { name: "Hack Squat (Panatta, media sentadilla)", setCount: 4, repsLabel: "10-12", category: "Activator", tone: "pink",
-        prevWeights: [40, 50, 50, 60], photo: PH.legMachine,
-        tempoNote: "Rango parcial: baja hasta ~90° de rodilla, nunca a profundidad completa. Sube el peso, no el rango.",
-        kneeNote: "Rango parcial obligatorio — nunca profundidad completa en este ejercicio.",
-        explanation: "Dominante de cuádriceps del día, en rango parcial por tu condición articular — suma volumen sin exponer la rodilla a flexión completa.",
-        hasAlt: true, altName: "Leg Press (Panatta), rango parcial", altPhoto: PH.legPress, altExplanation: "Mismo patrón de empuje de pierna con el mismo límite de rango." },
-      { name: "Kickback de glúteo en polea", setCount: 3, repsLabel: "15-20 por lado", category: "Pumper", tone: "yellow",
-        prevWeights: [15, 15, 20], photo: PH.cable,
-        tempoNote: "Rango corto, sin pausa — el objetivo es acumular repeticiones y sentir el bombeo, no la carga máxima.",
+        explanation: "Stretcher unilateral: máximo estiramiento del glúteo con poca carga y sin flexión profunda de rodilla. Reemplaza al peso muerto rumano bilateral del bloque anterior.",
+        hasAlt: true, altName: "Peso muerto a una pierna con apoyo de mano en Smith", altPhoto: PH.smith, altExplanation: "Misma bisagra con apoyo para el equilibrio." },
+      { name: "Fire hydrant en polea baja con tobillera", setCount: 2, repsLabel: "12-15 por lado", category: "Pumper", tone: "yellow", rest: "45-60 s",
+        baseFrom: "0-4", baseFactor: 0.5, prevWeights: [10.0, 10.0], photo: PH.cable,
+        tempoNote: "En cuatro apoyos, rodilla a 90°, abre la pierna hacia afuera y arriba con la cadera. Pausa de 1 s arriba. Empieza por la izquierda.",
         kneeNote: null,
-        explanation: "Pumper de cierre: rango corto y muchas repeticiones para terminar de fatigar el glúteo ya activado y estirado.",
-        hasAlt: true, altName: "Abducción de cadera de pie en polea baja", altPhoto: PH.cable, altExplanation: "Mismo objetivo de bombeo con otro patrón de movimiento — sirve si la polea de kickback está ocupada." },
+        explanation: "Pumper de rotación externa y abducción con la cadera flexionada: glúteo medio y mayor superior, un ángulo distinto a la patada hacia atrás.",
+        hasAlt: true, altName: "Fire hydrant con banda (sin polea)", altPhoto: PH.gym, altExplanation: "Mismo movimiento con banda." },      { name: "Zancada lateral con mancuerna (rango controlado)", optional: true, setCount: 3, repsLabel: "8-10 por lado", category: "Stretcher", tone: "orange", rest: "90 s",
+        baseFrom: "2-1", baseFactor: 1, prevWeights: [24.0, 24.0, 24.0], photo: PH.dumbbells,
+        tempoNote: "Paso lateral amplio, cadera hacia atrás y la pierna del paso flexionada hasta donde la rodilla esté cómoda; la otra pierna queda recta. Empieza por la izquierda.",
+        kneeNote: "Rango controlado: baja solo hasta ~90° de rodilla.",
+        explanation: "Plano frontal: carga glúteo y aductores en elongación, un movimiento que no existía en tu rutina anterior.",
+        hasAlt: true, altName: "Caminata lateral con banda (monster walk)", altPhoto: PH.gym, altExplanation: "Misma dirección lateral con banda." },
+
     ] },
-  { label: "Día 2 · Espalda y Bíceps", focusNote: "Pull: espalda y bíceps. Sin restricción de rodilla — enfoque en tracción y aprieto escapular.", knee: false, tags: false,
+  { label: "Día 2 · Espalda y Bíceps", focusNote: "Mesociclo 2 · ~50 min. Pull: agarres y ángulos nuevos. Biserie Pájaro + Curl bayesiano.", knee: false, tags: false,
     exercises: [
-      { name: "Jalón al pecho en polea (agarre ancho)", setCount: 4, repsLabel: "10-12",
-        prevWeights: [45, 50, 50, 55], photo: PH.cable,
-        tempoNote: "Lleva la barra hasta la parte alta del pecho, aprieta los dorsales abajo antes de soltar.",
+      { name: "Jalón al pecho con agarre supino (palmas hacia ti)", setCount: 4, repsLabel: "8-10", rest: "90-120 s",
+        baseFrom: "1-0", baseFactor: 1, prevWeights: [30.0, 30.0, 30.0, 30.0], photo: PH.cable,
+        tempoNote: "Agarre al ancho de hombros, codos hacia abajo y atrás, aprieta dorsales y bíceps abajo.",
         kneeNote: null,
-        explanation: "Dominante de dorsal ancho, base del día de espalda.",
-        hasAlt: true, altName: "Remo en máquina Panatta (agarre alto)", altPhoto: PH.cableRow, altExplanation: "Mismo énfasis en dorsal con patrón de tracción horizontal — sirve si la polea está ocupada." },
-      { name: "Remo sentado en polea (agarre neutro)", setCount: 4, repsLabel: "10-12",
-        prevWeights: [50, 55, 55, 60], photo: PH.cableRow,
-        tempoNote: "Aprieta los omóplatos al final de cada rep, codos pegados al cuerpo.",
+        explanation: "El agarre supino suma bíceps y dorsal inferior frente al agarre ancho del bloque anterior.",
+        hasAlt: true, altName: "Jalón al pecho con agarre neutro", altPhoto: PH.cable, altExplanation: "Mismo patrón vertical con agarre neutro." },
+      { name: "Remo unilateral sentada en polea baja", setCount: 3, repsLabel: "10-12 por lado", rest: "90 s",
+        baseFrom: "1-1", baseFactor: 0.5, prevWeights: [15.0, 15.0, 15.0], photo: PH.cableRow,
+        tempoNote: "Una mano con el manubrio, deja que el hombro se estire hacia adelante y tira con el codo pegado, pausa 1 s.",
         kneeNote: null,
-        explanation: "Espesor de espalda media, complementa el trabajo de ancho del jalón.",
-        hasAlt: true, altName: "Remo con mancuerna a una mano apoyada en banco", altPhoto: PH.dumbbells, altExplanation: "Mismo patrón de remo, unilateral — útil si la polea está ocupada." },
-      { name: "Face pull en polea (cuerda, altura alta)", setCount: 3, repsLabel: "15",
-        prevWeights: [15, 15, 18], photo: PH.cable,
-        tempoNote: "Tira hacia la cara separando las manos, codos altos, rotación externa al final.",
+        explanation: "Remo unilateral con mayor rango que el remo sentado con dos manos del bloque anterior.",
+        hasAlt: true, altName: "Remo con mancuerna a una mano apoyada en banco", altPhoto: PH.dumbbells, altExplanation: "Mismo remo unilateral con mancuerna." },
+      { name: "Curl predicador en máquina", setCount: 3, repsLabel: "10-12", rest: "60 s",
+        baseFrom: "1-3", baseFactor: 1, prevWeights: [30.0, 30.0, 30.0], photo: PH.legMachine,
+        tempoNote: "Brazos apoyados, baja controlado 3 s hasta casi extender el codo.",
         kneeNote: null,
-        explanation: "Deltoide posterior y salud de hombro — balancea el volumen de push de mañana con tracción.",
-        hasAlt: true, altName: "Pájaro con mancuernas inclinada al frente", altPhoto: PH.dumbbells, altExplanation: "Mismo enfoque en deltoide posterior sin polea." },
-      { name: "Curl de bíceps con barra Z", setCount: 3, repsLabel: "10-12",
-        prevWeights: [15, 17.5, 17.5], photo: PH.dumbbells,
-        tempoNote: "Sin balancear el torso, codos fijos a los costados.",
+        explanation: "El apoyo elimina el balanceo y carga el bíceps en la parte larga del recorrido.",
+        hasAlt: true, altName: "Curl con barra Z", altPhoto: PH.dumbbells, altExplanation: "Mismo músculo con barra." },
+      { name: "Pájaro en máquina (reverse fly)", setCount: 3, repsLabel: "15", rest: "45-60 s", supersetWith: 4,
+        baseFrom: "1-2", baseFactor: 1, prevWeights: [30.0, 30.0, 30.0], photo: PH.legMachine,
+        tempoNote: "Pecho en el apoyo, abre los brazos hasta la altura de los hombros sin encoger.",
         kneeNote: null,
-        explanation: "Bíceps con barra angulada, más cómoda para la muñeca que la barra recta.",
-        hasAlt: true, altName: "Curl de bíceps en polea baja con barra recta", altPhoto: PH.cable, altExplanation: "Mismo movimiento con tensión constante de polea." },
-      { name: "Curl martillo con mancuernas", setCount: 3, repsLabel: "12",
-        prevWeights: [10, 10, 12], photo: PH.dumbbells,
-        tempoNote: "Agarre neutro todo el recorrido, sin rotar la muñeca.",
+        explanation: "Deltoide posterior directo, sin los trapecios del face pull. Biserie con el curl bayesiano: músculos distintos.",
+        hasAlt: true, altName: "Pájaro con mancuernas inclinada al frente", altPhoto: PH.dumbbells, altExplanation: "Mismo deltoide posterior con carga libre." },
+      { name: "Curl bayesiano en polea (de espaldas)", setCount: 3, repsLabel: "12", rest: "45-60 s", supersetWith: 3,
+        baseFrom: "1-4", baseFactor: 0.5, prevWeights: [7.5, 7.5, 7.5], photo: PH.cable,
+        tempoNote: "De espaldas a la polea baja, brazo atrás: el bíceps se carga estirado desde el primer grado.",
         kneeNote: null,
-        explanation: "Agarre neutro que trabaja braquial y antebrazo, cierra el día de pull.",
-        hasAlt: true, altName: "Curl martillo en polea con cuerda", altPhoto: PH.cable, altExplanation: "Mismo agarre neutro con tensión constante." },
+        explanation: "Tensión máxima del bíceps en elongación con polea, un ángulo que no usaste antes.",
+        hasAlt: true, altName: "Curl inclinado con mancuernas", altPhoto: PH.dumbbells, altExplanation: "Mismo estiramiento con banco inclinado." },    ] },
+  { label: "Día 3 · Cuádriceps", focusNote: "Mesociclo 2 · ~55 min. Biserie Extensión + Curl femoral sentado.", knee: true, tags: true,
+    exercises: [
+      { name: "Sentadilla frontal en Smith Machine, talones elevados (rango parcial)", setCount: 4, repsLabel: "8-10", category: "Activator", tone: "pink", rest: "2-3 min",
+        baseFrom: "0-3", baseFactor: 1, prevWeights: [35.0, 35.0, 35.0, 35.0], photo: PH.smith,
+        tempoNote: "Barra al frente de los hombros, talones sobre discos, torso erguido. Baja hasta ~90° de rodilla; sube el peso, no el rango.",
+        kneeNote: "Rango parcial obligatorio: nunca profundidad completa.",
+        explanation: "Compuesto pesado del día: los talones elevados y la barra al frente cargan el cuádriceps con el torso vertical.",
+        hasAlt: true, altName: "Hack Squat (Panatta) pies bajos, rango parcial", altPhoto: PH.legMachine, altExplanation: "Mismo patrón guiado por la máquina." },
+      { name: "Prensa unilateral (rango parcial)", setCount: 3, repsLabel: "10 por lado", category: "Activator", tone: "pink", rest: "90-120 s",
+        baseFrom: "2-0", baseFactor: 0.5, prevWeights: [45.0, 45.0, 45.0], photo: PH.legPress,
+        tempoNote: "Una pierna en la plataforma, baja hasta ~90° de rodilla. Empieza por la izquierda y copia las reps en la derecha.",
+        kneeNote: "Rango parcial obligatorio.",
+        explanation: "Carga cada pierna por separado para igualar el desarrollo, con la máquina estabilizando.",
+        hasAlt: true, altName: "Prensa con dos piernas, rango parcial", altPhoto: PH.legPress, altExplanation: "Mismo patrón con ambas piernas." },
+      { name: "Extensión de cuádriceps con pausa de 2 s", setCount: 3, repsLabel: "12-15", category: "Activator", tone: "pink", rest: "45-60 s", supersetWith: 3,
+        baseFrom: "2-2", baseFactor: 1, prevWeights: [45.0, 45.0, 45.0], photo: PH.legExtension,
+        tempoNote: "Pausa de 2 s arriba apretando el cuádriceps, baja en 3 s.",
+        kneeNote: null,
+        explanation: "Aislamiento con pausa en la contracción máxima. Biserie con el curl femoral: músculos opuestos, sin interferencia.",
+        hasAlt: true, altName: "Sentadilla goblet con mancuerna (rango parcial)", altPhoto: PH.dumbbells, altExplanation: "Alternativa con carga axial ligera." },
+      { name: "Curl femoral sentado (Panatta)", setCount: 3, repsLabel: "10-12", category: "Activator", tone: "pink", rest: "45-60 s", supersetWith: 2,
+        baseFrom: "4-1", baseFactor: 1, prevWeights: [35.0, 35.0, 35.0], photo: PH.legMachine,
+        tempoNote: "Rango completo controlado. El sentado estira más el isquio que el acostado.",
+        kneeNote: null,
+        explanation: "Primera frecuencia semanal de isquios, con cadera flexionada.",
+        hasAlt: true, altName: "Curl femoral acostado (Panatta)", altPhoto: PH.legMachine, altExplanation: "Mismo músculo en camilla." },
+      { name: "Máquina de aductores", setCount: 2, repsLabel: "15-20", category: "Pumper", tone: "yellow", rest: "45-60 s",
+        prevWeights: [30, 35], photo: PH.legMachine,
+        tempoNote: "Cierra controlado y pausa 1 s; abre despacio sin dejar caer la carga.",
+        kneeNote: null,
+        explanation: "Suma masa en la cara interna del muslo con poco costo de fatiga y protege la ingle; no estaba en tu rutina anterior.",
+        hasAlt: true, altName: "Sentadilla sumo con mancuerna (rango parcial)", altPhoto: PH.dumbbells, altExplanation: "Cubre aductores sin máquina." },    ] },
+  { label: "Día 4 · Hombro y Tríceps", focusNote: "Mesociclo 2 · ~50 min. Push: press con barra guiada, lateral inclinada y press francés. Biserie final Extensión unilateral + Elevación en Y.", knee: false, tags: false,
+    exercises: [
+      { name: "Press de hombro en Smith Machine (sentada)", setCount: 4, repsLabel: "8-10", rest: "2 min",
+        baseFrom: "3-0", baseFactor: 2, prevWeights: [38.0, 38.0, 38.0, 38.0], photo: PH.smith,
+        tempoNote: "Barra guiada a la altura de la barbilla, empuja sin arquear la espalda baja.",
+        kneeNote: null,
+        explanation: "Press vertical con barra guiada: permite más carga que las mancuernas del bloque anterior.",
+        hasAlt: true, altName: "Press Arnold con mancuernas sentado", altPhoto: PH.dumbbells, altExplanation: "Mismo empuje con carga libre." },
+      { name: "Elevación lateral de lado en banco inclinado", setCount: 3, repsLabel: "12-15", rest: "60 s",
+        baseFrom: "3-1", baseFactor: 1, prevWeights: [10.0, 10.0, 10.0], photo: PH.dumbbells,
+        tempoNote: "Apoyada de costado en un banco inclinado, sube la mancuerna hasta la altura del hombro sin impulso.",
+        kneeNote: null,
+        explanation: "La posición inclinada pone tensión en el deltoide medio desde el inicio del recorrido.",
+        hasAlt: true, altName: "Elevación lateral en polea baja (una mano)", altPhoto: PH.cable, altExplanation: "Mismo músculo con polea." },
+      { name: "Press francés con barra Z en banco", setCount: 3, repsLabel: "10-12", rest: "60-90 s",
+        baseFrom: "3-2", baseFactor: 0.6, prevWeights: [15.0, 15.0, 15.0], photo: PH.dumbbells,
+        tempoNote: "Codos fijos apuntando al techo, baja la barra detrás de la frente y extiende sin abrir los codos.",
+        kneeNote: null,
+        explanation: "Cabeza larga del tríceps con carga libre; reemplaza al pushdown con cuerda.",
+        hasAlt: true, altName: "Press de tríceps en polea con barra V", altPhoto: PH.cable, altExplanation: "Mismo músculo en polea." },
+      { name: "Extensión de tríceps unilateral en polea (agarre supino)", setCount: 2, repsLabel: "12-15 por lado", rest: "45-60 s", supersetWith: 4,
+        baseFrom: "3-2", baseFactor: 0.4, prevWeights: [10.0, 10.0], photo: PH.cable,
+        tempoNote: "Palma hacia arriba, codo pegado al costado, extiende por completo.",
+        kneeNote: null,
+        explanation: "Unilateral con agarre supino: más recorrido y énfasis en la cabeza medial.",
+        hasAlt: true, altName: "Extensión de tríceps overhead con mancuerna", altPhoto: PH.dumbbells, altExplanation: "Mismo músculo con mancuerna." },
+      { name: "Elevación en Y en polea", setCount: 3, repsLabel: "12-15", rest: "45-60 s", supersetWith: 3,
+        baseFrom: "3-4", baseFactor: 0.5, prevWeights: [5.0, 5.0, 5.0], photo: PH.cable,
+        tempoNote: "Brazos en forma de Y al subir, pulgares arriba, sin encoger los hombros.",
+        kneeNote: null,
+        explanation: "Deltoide medio y posterior con trapecio inferior; cierra el día sin repetir la elevación frontal.",
+        hasAlt: true, altName: "Elevación frontal en polea baja", altPhoto: PH.cable, altExplanation: "Deltoide anterior con polea." },
     ] },
-  { label: "Día 3 · Cuádriceps", focusNote: "Dominante de cuádriceps. Rango parcial en máquinas de empuje de pierna, sin conflicto en aislamiento.", knee: true, tags: true,
+  { label: "Día 5 · Cadena posterior", focusNote: "Mesociclo 2 · ~50 min (4 ejercicios + almeja opcional si te sobra tiempo).", knee: true, tags: true,
+    activation: [
+      { name: "Caminata lateral con banda (band walk)", detail: "2 x 10 pasos por lado. Activa glúteo medio." },
+      { name: "Almeja con banda", detail: "2 x 15 por lado. Glúteo medio antes del trabajo lateral." },
+      { name: "Puente de glúteo sin carga", detail: "2 x 15, pausa de 1 s arriba, antes del peso muerto sumo." },
+    ],
     exercises: [
-      { name: "Leg Press (Panatta, rango parcial)", setCount: 4, repsLabel: "10-12", category: "Activator", tone: "pink",
-        prevWeights: [80, 90, 100, 100], photo: PH.legPress,
-        tempoNote: "Rango parcial: baja hasta ~90° de rodilla. Sube el peso entre semanas, no el rango.",
-        kneeNote: "Rango parcial obligatorio — nunca profundidad completa en este ejercicio.",
-        explanation: "Activator de cuádriceps con carga pesada en rango parcial. Complementa al hack squat del día de glúteo sin repetir el mismo ejercicio.",
-        hasAlt: true, altName: "Hack Squat (Panatta), rango parcial", altPhoto: PH.legMachine, altExplanation: "Mismo patrón de empuje de pierna y mismo límite de rango — cámbialo si el leg press está ocupado." },
-      { name: "Zancada caminando con mancuernas (rango controlado)", setCount: 3, repsLabel: "10 por lado", category: "Stretcher", tone: "orange",
-        prevWeights: [12, 12, 14], photo: PH.dumbbells,
-        tempoNote: "Pasos cortos, sin bajar la rodilla trasera al piso — mismo criterio de rango controlado de siempre.",
-        kneeNote: "Rango controlado: sin bajar la rodilla trasera al piso.",
-        explanation: "Stretcher de cuádriceps/glúteo unilateral en movimiento, distinto a la búlgara estática del día 1.",
-        hasAlt: true, altName: "Leg press unilateral (rango parcial)", altPhoto: PH.legPress, altExplanation: "Mismo estímulo unilateral con carga guiada — útil si el espacio para zancadas está ocupado." },
-      { name: "Extensión de cuádriceps en máquina", setCount: 4, repsLabel: "12-15", category: "Activator", tone: "pink",
-        prevWeights: [35, 40, 40, 45], photo: PH.legExtension,
-        tempoNote: "Aprieta arriba sin bloquear seco la rodilla. Rango cómodo, controlado en la bajada.",
+      { name: "Peso muerto sumo con barra (rango cómodo)", setCount: 4, repsLabel: "6-8", category: "Stretcher", tone: "orange", rest: "2-3 min",
+        baseFrom: "4-0", baseFactor: 1.5, prevWeights: [38.0, 38.0, 38.0, 38.0], photo: PH.dumbbells,
+        tempoNote: "Pies muy abiertos, agarre entre las piernas, pecho alto; empuja el piso y cierra la cadera sin hiperextender. Para si pierdes la espalda neutra.",
+        kneeNote: "Si la rodilla molesta, para y usa la alternativa.",
+        explanation: "Stretcher pesado con postura ancha: glúteo mayor y aductores con carga alta. Es el compuesto más pesado de la semana de cadena posterior y reemplaza a los buenos días.",
+        hasAlt: true, altName: "Peso muerto rumano con barra", altPhoto: PH.dumbbells, altExplanation: "Bisagra clásica con barra." },
+      { name: "Curl femoral de pie a una pierna en polea", setCount: 3, repsLabel: "10-12 por lado", category: "Activator", tone: "pink", rest: "90 s",
+        baseFrom: "4-1", baseFactor: 0.4, prevWeights: [14.0, 14.0, 14.0], photo: PH.cable,
+        tempoNote: "Tobillera en la polea baja, apoyada con las manos, flexiona la rodilla llevando el talón al glúteo. Empieza por la izquierda.",
         kneeNote: null,
-        explanation: "Aislamiento directo de cuádriceps: sin carga axial ni impacto sobre la rodilla, por eso es seguro en rango completo pese a tu restricción.",
-        hasAlt: true, altName: "Sentadilla goblet con mancuerna (rango parcial)", altPhoto: PH.dumbbells, altExplanation: "Alternativa con carga axial ligera — mantén el mismo límite de rango parcial que en hack squat." },
-      { name: "Step-up en banco bajo (rango controlado)", setCount: 3, repsLabel: "10 por lado", category: "Stretcher", tone: "orange",
-        prevWeights: [10, 10, 12], photo: PH.dumbbells,
-        tempoNote: "Banco bajo, sin pasar de ~90° de flexión de rodilla al subir.",
-        kneeNote: "Usa banco bajo — sin pasar de ~90° de flexión de rodilla.",
-        explanation: "Stretcher unilateral con altura controlada, útil para corregir asimetrías entre piernas.",
-        hasAlt: true, altName: "Leg press unilateral (rango parcial)", altPhoto: PH.legPress, altExplanation: "Mismo enfoque unilateral con carga guiada — cámbialo si el banco está ocupado." },
-      { name: "Abducción de cadera en máquina", setCount: 3, repsLabel: "15-20", category: "Pumper", tone: "yellow",
-        prevWeights: [30, 30, 35], photo: PH.legMachine,
-        tempoNote: "Rango corto, ritmo constante, sin pausa entre repeticiones.",
+        explanation: "Isquios unilaterales sin las máquinas de curl del bloque anterior; mantiene la frecuencia 2x semanal de isquios.",
+        hasAlt: true, altName: "Curl femoral acostado (Panatta)", altPhoto: PH.legMachine, altExplanation: "Mismo músculo en camilla." },
+      { name: "Pull-through en polea baja", setCount: 3, repsLabel: "12-15", category: "Stretcher", tone: "orange", rest: "90 s",
+        baseFrom: "0-4", baseFactor: 0.75, prevWeights: [15.0, 15.0, 15.0], photo: PH.cable,
+        tempoNote: "De espaldas a la polea, cuerda entre las piernas, bisagra de cadera con rodillas suaves y cierra apretando el glúteo.",
         kneeNote: null,
-        explanation: "Pumper de glúteo medio que complementa el trabajo de cuádriceps del día y cierra con bombeo.",
-        hasAlt: true, altName: "Caminata lateral con banda (monster walk)", altPhoto: PH.gym, altExplanation: "Mismo enfoque de glúteo medio sin máquina — sirve si está ocupada." },
-    ] },
-  { label: "Día 4 · Hombro y Tríceps", focusNote: "Push: hombro y tríceps, sin ejercicios de pecho. Sin restricción de rodilla.", knee: false, tags: false,
-    exercises: [
-      { name: "Press militar con mancuernas sentado", setCount: 4, repsLabel: "8-10",
-        prevWeights: [14, 14, 16, 16], photo: PH.dumbbells,
-        tempoNote: "Empuje vertical controlado, sin arquear la espalda baja al final del recorrido.",
+        explanation: "Bisagra con tensión constante y poca carga en la columna, después del peso muerto pesado. Opción de bisagra que recomienda Contreras.",
+        hasAlt: true, altName: "Peso muerto rumano con mancuernas (rango cómodo)", altPhoto: PH.dumbbells, altExplanation: "Misma bisagra con carga libre." },
+      { name: "Frog pump con mancuerna", setCount: 3, repsLabel: "20-25", category: "Pumper", tone: "yellow", rest: "45-60 s",
+        prevWeights: [10, 12, 12], photo: PH.gym,
+        tempoNote: "Plantas juntas, rodillas abiertas, mancuerna sobre la cadera. Rango corto, ritmo rápido y aprieto arriba.",
         kneeNote: null,
-        explanation: "Dominante de hombro del día, empuje vertical con mancuernas para trabajar los tres deltoides.",
-        hasAlt: true, altName: "Press de hombro en máquina Panatta", altPhoto: PH.legMachine, altExplanation: "Mismo patrón de empuje vertical, guiado — útil si el espacio de mancuernas está ocupado." },
-      { name: "Elevaciones laterales con mancuernas", setCount: 4, repsLabel: "12-15",
-        prevWeights: [8, 8, 10, 10], photo: PH.dumbbells,
-        tempoNote: "Sube hasta la altura del hombro, codos con leve flexión, sin impulso.",
+        explanation: "Técnica pumper de Contreras: con la rodilla flexionada el isquio queda en desventaja y el glúteo hace más del trabajo.",
+        hasAlt: true, altName: "Puente de glúteo con banda (peso corporal)", altPhoto: PH.gym, altExplanation: "Mismo patrón sin carga externa." },      { name: "Almeja (clamshell) tumbada con banda", optional: true, setCount: 3, repsLabel: "15-20 por lado", category: "Pumper", tone: "yellow", rest: "45-60 s", bodyweight: true,
+        prevWeights: [0, 0, 0], photo: PH.gym,
+        tempoNote: "Tumbada de lado, banda sobre las rodillas, abre la rodilla de arriba sin rotar la pelvis. Empieza por la izquierda.",
         kneeNote: null,
-        explanation: "Deltoide medio — el que da el ancho de hombro que buscas.",
-        hasAlt: true, altName: "Elevación lateral en polea baja (una mano)", altPhoto: PH.cable, altExplanation: "Mismo músculo con tensión constante de polea." },
-      { name: "Press de tríceps en polea (cuerda)", setCount: 4, repsLabel: "12-15",
-        prevWeights: [25, 25, 30, 30], photo: PH.cable,
-        tempoNote: "Aprieta abajo sin abrir los codos hacia los lados.",
-        kneeNote: null,
-        explanation: "Aislamiento de tríceps con tensión constante de polea, base del trabajo de tríceps del día.",
-        hasAlt: true, altName: "Press francés con mancuerna", altPhoto: PH.dumbbells, altExplanation: "Mismo enfoque de tríceps con carga libre." },
-      { name: "Extensión de tríceps overhead en polea (de espaldas)", setCount: 3, repsLabel: "12-15",
-        prevWeights: [15, 15, 18], photo: PH.cable,
-        tempoNote: "De espaldas a la polea, cuerda por detrás de la cabeza — estiramiento marcado de la cabeza larga arriba.",
-        kneeNote: null,
-        explanation: "Enfatiza la cabeza larga del tríceps por el estiramiento overhead, distinto al press de cuerda.",
-        hasAlt: true, altName: "Extensión de tríceps overhead con mancuerna a dos manos", altPhoto: PH.dumbbells, altExplanation: "Mismo estiramiento overhead sin polea." },
-      { name: "Elevación frontal con disco", setCount: 3, repsLabel: "12",
-        prevWeights: [8, 8, 10], photo: PH.dumbbells,
-        tempoNote: "Sube hasta la altura de los ojos, sin balancear el torso.",
-        kneeNote: null,
-        explanation: "Deltoide anterior, cierre del día de push.",
-        hasAlt: true, altName: "Elevación frontal con mancuernas alternado", altPhoto: PH.dumbbells, altExplanation: "Mismo músculo objetivo, alternando brazos." },
-    ] },
-  { label: "Día 5 · Cadena posterior", focusNote: "Cadena posterior y abducción: isquios, glúteo y estabilidad de cadera.", knee: true, tags: true,
-    exercises: [
-      { name: "Good Morning en Smith Machine", setCount: 4, repsLabel: "10-12", category: "Stretcher", tone: "orange",
-        prevWeights: [20, 20, 25, 25], photo: PH.smith,
-        tempoNote: "Bisagra de cadera con rodillas suaves, barra guiada en el riel. Baja hasta sentir el estiramiento en isquios.",
-        kneeNote: null,
-        explanation: "Stretcher de cadena posterior: la barra guiada te da estabilidad extra, sin carga axial de rodilla — cero conflicto con tu restricción.",
-        hasAlt: true, altName: "Peso muerto rumano con barra libre", altPhoto: PH.dumbbells, altExplanation: "Mismo patrón de bisagra de cadera sin el riel guiado — útil si la Smith Machine está ocupada." },
-      { name: "Leg Curl acostado (Panatta)", setCount: 4, repsLabel: "10-12", category: "Activator", tone: "pink",
-        prevWeights: [25, 30, 30, 35], photo: PH.legMachine,
-        tempoNote: "Rango completo controlado en camilla — sin estrés de rodilla en carga porque no hay peso axial.",
-        kneeNote: null,
-        explanation: "Activator de isquiotibiales, aislado y seguro para tu rodilla al no cargar peso a través de la articulación.",
-        hasAlt: true, altName: "Leg curl sentado (Panatta)", altPhoto: PH.legMachine, altExplanation: "Mismo aislamiento de isquios en otra máquina — cámbialo si la camilla está ocupada." },
-      { name: "Back extension (espalda redondeada, pies 45°)", setCount: 3, repsLabel: "12-15", category: "Stretcher", tone: "orange",
-        prevWeights: [10, 10, 15], photo: PH.gym,
-        tempoNote: "Espalda redondeada y pies a 45° hacia afuera — tu técnica ya validada para enfatizar glúteo sobre lumbares.",
-        kneeNote: null,
-        explanation: "Técnica validada contigo: redondear la espalda baja y abrir los pies a 45° traslada el énfasis del lumbar al glúteo.",
-        hasAlt: true, altName: "Hip hinge con banda a nivel de rodillas (isométrico)", altPhoto: PH.gym, altExplanation: "Mismo patrón de bisagra con tensión constante de banda — sirve si el banco de back extension está ocupado." },
-      { name: "Hip Thrust con banda a nivel de rodillas", setCount: 3, repsLabel: "15 (pausa isométrica)", category: "Pumper", tone: "yellow",
-        bodyweight: true, prevWeights: [0, 0, 0], photo: PH.gym,
-        tempoNote: "Banda tensando hacia afuera en cada rep, pausa de 2 segundos arriba empujando las rodillas contra la banda.",
-        kneeNote: null,
-        explanation: "Pumper con énfasis en abducción isométrica — sin carga externa, todo el trabajo lo hace la tensión de la banda contra las rodillas.",
-        hasAlt: true, altName: "Puente de glúteo con banda (bodyweight)", altPhoto: PH.gym, altExplanation: "Mismo patrón sin banco, apoyada en el piso — útil si el banco está ocupado." },
-      { name: "Abducción de cadera de pie en polea baja", setCount: 3, repsLabel: "15-20 por lado", category: "Pumper", tone: "yellow",
-        prevWeights: [10, 10, 12], photo: PH.cable,
-        tempoNote: "Rango corto y controlado, sin balancear el torso para generar impulso.",
-        kneeNote: null,
-        explanation: "Cierre de bombeo en glúteo medio con un patrón distinto a la máquina del día 2 — más variedad de ángulo en la semana.",
-        hasAlt: true, altName: "Almeja con banda elástica (clamshell)", altPhoto: PH.gym, altExplanation: "Mismo músculo objetivo sin polea — sirve si está ocupada." },
+        explanation: "Glúteo medio en rotación externa con la cadera flexionada. Biserie con el frog pump.",
+        hasAlt: true, altName: "Abducción de cadera de pie en polea baja", altPhoto: PH.cable, altExplanation: "Mismo músculo con polea." },
+
     ] },
 ];
 
@@ -297,7 +305,14 @@ const INBODY_SEED = [
   { date: "27.04.2026", peso: 67.0, mme: 28.5, pgc: 23.4, cadera: 0.83, puntuacion: 84 },
   { date: "11.06.2026", peso: 66.6, mme: 28.6, pgc: 23.1, cadera: 0.85, puntuacion: 84 },
   { date: "21.07.2026", peso: 67.8, mme: 28.9, pgc: 23.2, cadera: 0.84, puntuacion: 85 },
+  { date: "02.09.2026", peso: 67.8, mme: 29.0, pgc: 23.0, cadera: 0.85, puntuacion: 85 },
 ];
+
+/* Mesociclo vigente. Cambiar MESO_ID al rotar de rutina: la app descarta pesos/reps/RIR
+   de la rutina anterior (que se guardan por posición de ejercicio) y el historial de
+   Chequeo/gráficas solo cuenta sesiones desde MESO_START. exercise_logs no se borra. */
+const MESO_ID = 2;
+const MESO_START = "2026-10-05";
 const fmtDelta = (curr, prev, unit) => {
   if (prev == null) return "—";
   const d = Math.round((curr - prev) * 100) / 100;
@@ -392,11 +407,19 @@ function checkWeeklyReset(){
     persistAppState();
   }
 }
+// "día-ejercicio" -> peso mínimo registrado en exercise_logs antes de MESO_START (rutina anterior)
+let legacyLogMin = new Map();
 function baselineWeight(exerciseKey, si, alt, ex){
   const wk = alt ? `${exerciseKey}-alt-${si}` : `${exerciseKey}-${si}`;
   const stored = state.prevWeights[wk];
   const arr = alt ? (ex.altPrevWeights || ex.prevWeights) : ex.prevWeights;
-  return (stored != null && stored !== "") ? parseFloat(stored) : arr[si];
+  if (stored != null && stored !== "") return parseFloat(stored);
+  if (!alt && ex.baseFrom){
+    const cands = [(state.prevWeights.__legacy || {})[ex.baseFrom], legacyLogMin.get(ex.baseFrom)]
+      .filter(v => v != null && v > 0);
+    if (cands.length) return Math.round(Math.min(...cands) * (ex.baseFactor || 1) * 2) / 2;
+  }
+  return arr[si];
 }
 
 async function loadRemoteState(){
@@ -415,6 +438,22 @@ async function loadRemoteState(){
       state.prevWeights = row.prev_weights || {};
       state.weekAnchor = row.week_anchor || null;
       state.chartExerciseKey = row.chart_exercise_key || state.chartExerciseKey;
+      // Rutina nueva: los pesos guardados pertenecen a los ejercicios del mesociclo anterior.
+      if (state.prevWeights.__meso !== MESO_ID){
+        // Peso mínimo registrado por ejercicio en la rutina anterior (clave "día-ejercicio"):
+        // sirve de peso inicial para los ejercicios nuevos con equivalente directo (baseFrom).
+        const legacy = { ...(state.prevWeights.__legacy || {}) };
+        const collect = obj => { for (const [k, v] of Object.entries(obj || {})){
+          const mm = k.match(/^(\d+-\d+)-(\d+)$/); const n = parseFloat(v);
+          if (!mm || !(n > 0)) continue;
+          legacy[mm[1]] = Math.min(legacy[mm[1]] ?? Infinity, n);
+        } };
+        collect(state.prevWeights); collect(state.weights);
+        state.prevWeights = { __meso: MESO_ID, __legacy: legacy };
+        state.weights = {}; state.reps = {}; state.rir = {}; state.completed = {};
+        state.chartExerciseKey = "0-0";
+        persistAppState();
+      }
       // Solo se revisa el reinicio semanal con datos remotos confirmados: si el fetch
       // falla, state.weights se queda en su default local {} y NO queremos que eso se
       // confunda con "semana vacía" y sobreescriba lo real guardado en Supabase.
@@ -566,9 +605,19 @@ let sessionHistoryByExercise = new Map();
 async function loadSessionHistory(){
   if (!supa) { plateauReady = true; plateauLoadFailed = true; render(); return; }
   try {
+    try {
+      const { data: oldRows } = await supa.from("exercise_logs")
+        .select("day_index,exercise_index,weight").eq("is_alt", false).lt("logged_on", MESO_START).gt("weight", 0);
+      legacyLogMin = new Map();
+      for (const r of (oldRows || [])){
+        const k = `${r.day_index}-${r.exercise_index}`; const w = Number(r.weight);
+        legacyLogMin.set(k, Math.min(legacyLogMin.get(k) ?? Infinity, w));
+      }
+    } catch (e) { console.warn("No se pudo leer el historial de la rutina anterior.", e); }
     const { data, error } = await supa.from("exercise_logs")
       .select("logged_on,day_index,exercise_index,weight,reps")
       .eq("is_alt", false)
+      .gte("logged_on", MESO_START)
       .order("logged_on", { ascending: true });
     if (error) throw error;
     // Agrupar por ejercicio -> por fecha de sesión -> peso máximo y volumen total logrados
@@ -788,7 +837,7 @@ function exerciseHTML(ex, i, dayIndex){
   const completed = !!state.completed[key];
   const hasSets = !!ex.prevWeights;
   const isBodyweight = !!ex.bodyweight;
-  const setsReps = ex.setCount + " x " + ex.repsLabel;
+  const setsReps = ex.setCount + " x " + ex.repsLabel + (ex.optional ? " · opcional (si te sobra tiempo)" : "");
   const tone = TONE_MAP[ex.tone] || "neutral";
 
   const badge = ex.category
@@ -855,7 +904,8 @@ function exerciseHTML(ex, i, dayIndex){
         <div data-action="toggleOpen" data-key="${key}" style="flex:1;min-width:0;cursor:pointer;display:flex;align-items:center;gap:12px;">
           <div style="flex:1;min-width:0;${completed ? "opacity:0.5;text-decoration:line-through;" : ""}">
             <div style="font-weight:500;font-size:14px;">${esc(ex.name)}</div>
-            <div style="font-size:12px;margin-top:2px;" class="muted">${esc(setsReps)}</div>
+            <div style="font-size:12px;margin-top:2px;" class="muted">${esc(setsReps)}${ex.rest ? " · descanso " + esc(ex.rest) : ""}</div>
+            ${ex.supersetWith != null && DAYS[dayIndex].exercises[ex.supersetWith] ? `<div style="font-size:11px;margin-top:3px;color:var(--color-accent-300);">⇄ Biserie con: ${esc(DAYS[dayIndex].exercises[ex.supersetWith].name)}</div>` : ""}
           </div>
           ${badge}
           <div class="chev" style="transform:rotate(${isOpen ? 180 : 0}deg);">▾</div>
@@ -875,10 +925,16 @@ function dayPanelHTML(day, dayIndex){
         <span class="tag tag-neutral">🟡 Pumper = alto rango, bombeo</span>
       </div>` : "";
   const list = day.exercises.map((ex, i) => exerciseHTML(ex, i, dayIndex)).join("");
+  const activation = day.activation
+    ? `<div style="margin:14px 20px 0;padding:12px 14px;background:var(--color-neutral-900);border:1px solid var(--color-divider);border-radius:var(--radius-md);">
+        <div style="font-size:11px;letter-spacing:0.08em;text-transform:uppercase;" class="muted">Activación previa · 5-6 min · no cuenta como volumen</div>
+        ${day.activation.map(a => `<div style="margin-top:8px;font-size:13px;line-height:1.5;"><strong>${esc(a.name)}</strong><div style="opacity:0.8;">${esc(a.detail)}</div></div>`).join("")}
+      </div>` : "";
   return `
     <div style="padding:14px 20px 4px;font-size:13px;opacity:0.75;line-height:1.5;">${esc(day.focusNote)}</div>
     ${knee}
     ${tags}
+    ${activation}
     <div style="padding:16px 20px 40px;display:flex;flex-direction:column;gap:12px;">${list}</div>
     <div style="padding:0 20px 32px;text-align:center;font-size:11px;color:var(--color-neutral-600);">Fotos de máquina: reemplázalas cuando tengas las tuyas. Video: enlace de búsqueda mientras no hay grabación propia.</div>`;
 }
