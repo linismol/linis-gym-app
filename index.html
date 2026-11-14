@@ -849,6 +849,11 @@ function miniChartHTML(ex, exerciseKey){
     </div>`;
 }
 
+function videoLinkHTML(name){
+  const q = name.replace(/\s*\([^)]*\)/g, "") + " técnica ejecución";
+  return `<a href="${esc(yt(q))}" target="_blank" rel="noopener" class="lighten" style="margin-top:10px;display:inline-flex;align-items:center;gap:8px;padding:8px 14px;border-radius:10px;background:var(--color-neutral-800);color:var(--color-accent);text-decoration:none;font-size:13px;">▶ Ver video de la técnica</a>`;
+}
+
 function exerciseHTML(ex, i, dayIndex){
   const key = dayIndex + "-" + i;
   const isOpen = !!state.open[key];
@@ -885,17 +890,9 @@ function exerciseHTML(ex, i, dayIndex){
           </div>` : "";
         altBlock = `<div style="margin-top:14px;padding:14px;background:var(--color-neutral-900);border-radius:var(--radius-md);">
             <div style="font-size:11px;letter-spacing:0.08em;text-transform:uppercase;margin-bottom:8px;" class="muted">Alternativa · máquina ocupada</div>
-            <div style="display:flex;gap:10px;margin-bottom:10px;">
-              <div style="position:relative;width:96px;height:96px;flex:none;border-radius:10px;overflow:hidden;background:var(--color-neutral-800);">
-                <img class="lighten" src="${esc(ex.altPhoto)}" alt="${esc(ex.altName)}" loading="lazy" referrerpolicy="no-referrer" style="width:100%;height:100%;object-fit:cover;display:block;" onerror="this.style.display='none';this.nextElementSibling.style.display='flex';">
-                <div style="position:absolute;inset:0;display:none;align-items:center;justify-content:center;text-align:center;padding:6px;font-size:11px;color:var(--color-neutral-500);">Foto máquina</div>
-              </div>
-              <a href="${esc(yt(ex.altName + " técnica ejecución"))}" target="_blank" rel="noopener" class="lighten" style="flex:none;width:96px;height:96px;border-radius:10px;background:var(--color-neutral-800);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;color:var(--color-accent);text-decoration:none;">
-                <span style="font-size:18px;">▶</span><span style="font-size:11px;">Ver video</span>
-              </a>
-            </div>
             <div style="font-weight:500;font-size:13px;">${esc(ex.altName)}</div>
             <div style="margin-top:4px;font-size:13px;opacity:0.8;line-height:1.55;">${esc(ex.altExplanation)}</div>
+            ${videoLinkHTML(ex.altName)}
             ${altWeights}
           </div>`;
       } else {
@@ -908,6 +905,7 @@ function exerciseHTML(ex, i, dayIndex){
         ${kneeInline}
         <div style="margin-top:12px;font-size:11px;letter-spacing:0.08em;text-transform:uppercase;" class="muted">Técnica</div>
         <div style="margin-top:4px;font-size:13px;opacity:0.9;line-height:1.55;">${esc(ex.explanation)}</div>
+        ${videoLinkHTML(ex.name)}
         ${weightsBlock}
         ${miniChart}
         <div style="margin-top:14px;">
@@ -955,7 +953,7 @@ function dayPanelHTML(day, dayIndex){
     ${tags}
     ${activation}
     <div style="padding:16px 20px 40px;display:flex;flex-direction:column;gap:12px;">${list}</div>
-    <div style="padding:0 20px 32px;text-align:center;font-size:11px;color:var(--color-neutral-600);">Fotos de máquina: reemplázalas cuando tengas las tuyas. Video: enlace de búsqueda mientras no hay grabación propia.</div>`;
+    <div style="padding:0 20px 32px;text-align:center;font-size:11px;color:var(--color-neutral-600);">Video: abre una búsqueda en YouTube con el nombre del ejercicio (principal y alternativa).</div>`;
 }
 
 function routinePanelHTML(){
